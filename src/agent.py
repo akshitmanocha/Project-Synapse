@@ -200,12 +200,46 @@ def _tool_registry() -> Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]]:
 		except Exception:
 			return {"tool_name": "get_nearby_merchants", "status": "error", "error_message": "invalid or missing lat/lng"}
 
+	def adapt_collect_evidence(p: Dict[str, Any]) -> Dict[str, Any]:
+		return sim_tools.collect_evidence(
+			order_id=str(p.get("order_id", "")),
+			requester=str(p.get("requester", "agent")),
+			ask_photos=bool(p.get("ask_photos", True))
+		)
+
+	def adapt_analyze_evidence(p: Dict[str, Any]) -> Dict[str, Any]:
+		return sim_tools.analyze_evidence(evidence_id=str(p.get("evidence_id", "")))
+
+	def adapt_issue_instant_refund(p: Dict[str, Any]) -> Dict[str, Any]:
+		amount = p.get("amount", 0)
+		try:
+			amount = float(amount)
+		except (ValueError, TypeError):
+			amount = 0.0
+		return sim_tools.issue_instant_refund(
+			order_id=str(p.get("order_id", "")),
+			amount=amount,
+			currency=str(p.get("currency", "USD")),
+			reason=p.get("reason")
+		)
+
+	def adapt_exonerate_driver(p: Dict[str, Any]) -> Dict[str, Any]:
+		return sim_tools.exonerate_driver(
+			driver_id=str(p.get("driver_id", "")),
+			order_id=p.get("order_id"),
+			reason=p.get("reason")
+		)
+
 	return {
 		"check_traffic": adapt_check_traffic,
 		"get_merchant_status": adapt_get_merchant_status,
 		"notify_customer": adapt_notify_customer,
 		"re_route_driver": adapt_re_route_driver,
 		"get_nearby_merchants": adapt_get_nearby_merchants,
+		"collect_evidence": adapt_collect_evidence,
+		"analyze_evidence": adapt_analyze_evidence,
+		"issue_instant_refund": adapt_issue_instant_refund,
+		"exonerate_driver": adapt_exonerate_driver,
 		# Special pseudo-tool handled in tool_exec_node: "finish"
 	}
 
@@ -374,8 +408,9 @@ def run_agent(input_text: str) -> AgentState:
 		"observation": None,
 		"done": False,
 	}
-	# Invoke compiled graph; it will iterate until END
-	final_state: AgentState = app.invoke(initial)
+	# Invoke compiled graph with recursion limit; it will iterate until END  
+	config = {"recursion_limit": 15}  # Prevent runaway loops
+	final_state: AgentState = app.invoke(initial, config)
 	return final_state
 
 
