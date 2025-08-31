@@ -55,7 +55,6 @@ __all__ = [
 	"log_event",
 ]
 
-
 def check_traffic(route: str) -> Literal["heavy", "moderate", "light"]:
 	"""Return a random traffic status for the provided route.
 
