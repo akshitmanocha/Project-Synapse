@@ -1,0 +1,3 @@
+# Lists all Python dependencies for the project.
+# Generated via `pip freeze > requirements.txt`.
+# e.g., langchain, langgraph, openai, python-dotenv

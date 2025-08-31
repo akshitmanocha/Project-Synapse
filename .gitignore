@@ -1,3 +1,6 @@
+# Specifies intentionally untracked files to ignore.
+# Example entries: __pycache__/, *.pyc, .env, venv/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
