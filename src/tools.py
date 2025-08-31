@@ -37,7 +37,7 @@ Notes:
 - Keep tools deterministic enough for tests when needed; allow seeding via random if desired.
 - Replace implementations with real integrations later (APIs/DBs/SDKs). Keep function signatures stable.
 """
-from __future__ import annotations
+from __future__ import annotations 
 
 import random
 import time
