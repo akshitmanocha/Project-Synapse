@@ -1,41 +1,96 @@
 """
-TOOLS MODULE SPEC (Simulated)
+Synapse Logistics Tools - Comprehensive Simulated External API Layer
 
-Purpose:
-- Provide a thin, test-friendly layer of simulated external tools the agent can call.
-- Each tool returns hardcoded or randomized stub data and prints side effects where relevant.
+This module provides a complete ecosystem of 18+ specialized tools for last-mile logistics
+coordination. Each tool simulates realistic interactions with external systems that would
+exist in a production logistics platform, including traffic APIs, merchant systems,
+customer communication channels, and payment processors.
 
-Contracts (inputs -> outputs / effects):
-- check_traffic(route: str) -> Literal['heavy','moderate','light']
-  Returns a random traffic level for the given route.
+Architecture Philosophy:
+    The tools are designed as realistic simulators rather than simple mocks, providing:
+    - Consistent, believable data that reflects real-world logistics scenarios
+    - Appropriate failure modes and edge cases for robust agent training
+    - Comprehensive coverage of logistics operations across all stakeholders
+    - Rich, structured responses that enable sophisticated agent reasoning
 
-- get_merchant_status(merchant_id: str | int) -> dict
-  Example: { 'status': 'open', 'prep_time_minutes': 40 }
-  Returns a simulated status and prep time.
+Tool Categories:
 
-- notify_customer(customer_id: str | int, message: str) -> bool
-  Prints a notification message to stdout and returns True.
+🚗 Traffic & Routing Tools:
+    - check_traffic: Real-time traffic condition analysis
+    - re_route_driver: Dynamic route optimization and driver coordination
 
-- re_route_driver(driver_id: str | int, new_task_id: str | int) -> bool
-  Prints a re-routing action to stdout and returns True.
+🏪 Merchant Operations Tools:
+    - get_merchant_status: Restaurant/store operational status and capacity
+    - contact_merchant: Direct communication channel with merchants
+    - get_nearby_merchants: Alternative merchant discovery for substitutions
+    - log_merchant_packaging_feedback: Quality feedback and improvement tracking
 
-- get_driver_location(driver_id: str | int) -> dict
-  Example: { 'lat': 37.7749, 'lon': -122.4194, 'accuracy_m': 25 }
-  Returns a simulated geo-position for a driver.
+📱 Customer Communication Tools:
+    - notify_customer: Multi-channel customer notification system
+    - contact_recipient_via_chat: Direct recipient communication with fallback options
 
-- estimate_eta(route: str, traffic_status: str | None = None) -> int
-  Returns a simulated ETA in minutes based on traffic.
+🚚 Driver Management Tools:
+    - get_driver_status: Real-time driver location, status, and availability
+    - exonerate_driver: Clearing drivers from false accusations with evidence
 
-- get_order_status(order_id: str | int) -> dict
-  Example: { 'status': 'preparing', 'ready_in_minutes': 15 }
-  Returns a simulated order status snapshot.
+🕵️ Evidence & Dispute Resolution Tools:
+    - collect_evidence: Comprehensive evidence gathering for dispute resolution
+    - analyze_evidence: AI-powered fault analysis and confidence scoring
 
-- log_event(event: str, metadata: dict | None = None) -> None
-  Prints a structured log line for observability during simulation.
+📦 Delivery Management Tools:
+    - suggest_safe_drop_off: Secure package placement options
+    - find_nearby_locker: Alternative secure storage location discovery
+    - schedule_redelivery: Flexible redelivery scheduling and coordination
+    - contact_sender: Sender communication for complex resolution scenarios
 
-Notes:
-- Keep tools deterministic enough for tests when needed; allow seeding via random if desired.
-- Replace implementations with real integrations later (APIs/DBs/SDKs). Keep function signatures stable.
+💰 Refund Processing Tools:
+    - issue_instant_refund: Immediate customer compensation processing
+    - issue_partial_refund: Nuanced refund handling for partial fault scenarios
+    - propose_substitute: Alternative item recommendation and substitution
+
+Design Principles:
+    1. **Realistic Simulation**: Each tool behaves like a real external API with
+       appropriate latency, failure modes, and data structures.
+    
+    2. **Rich Context**: Tools provide enough detail for sophisticated agent reasoning
+       while maintaining clean, focused interfaces.
+    
+    3. **Failure Realism**: Tools include realistic failure modes that mirror
+       real-world API limitations and external system constraints.
+    
+    4. **Extensibility**: New tools can be easily added following established patterns
+       for parameter handling, response structure, and error modes.
+    
+    5. **Testing Support**: All tools provide deterministic modes for reliable testing
+       while supporting randomization for realistic simulation.
+
+Integration Notes:
+    - All tools return structured dictionaries with consistent status indicators
+    - Error conditions are handled gracefully with informative error messages  
+    - Tools are designed to be easily replaced with real API integrations
+    - Function signatures are stable to support seamless production transitions
+    - Comprehensive logging supports debugging and performance analysis
+
+Usage Example:
+    # Traffic analysis
+    traffic_result = check_traffic(route_id="I-280_SF_to_SJ") 
+    
+    # Customer communication  
+    notify_result = notify_customer(
+        customer_id="cust_123",
+        message="Your delivery is running 15 minutes late due to traffic"
+    )
+    
+    # Evidence collection for disputes
+    evidence = collect_evidence(
+        order_id="order_456", 
+        requester="customer_service",
+        ask_photos=True
+    )
+
+Authors: Project Synapse Team
+License: MIT
+Version: 1.0.0
 """
 from __future__ import annotations 
 

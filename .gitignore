@@ -182,3 +182,21 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# IDE and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Config files with sensitive data
+config/.env
+
+# Old source directory (cleanup)
+src/
+
+# Claude
+.claude/
