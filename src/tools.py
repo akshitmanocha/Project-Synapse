@@ -42,7 +42,8 @@ from __future__ import annotations
 
 import random
 import time
-from typing import Literal, Optional
+import datetime
+from typing import Any, Dict, List, Literal, Optional
 
 __all__ = [
     "get_merchant_status",
@@ -77,6 +78,36 @@ __all__ = [
     "TOOL_METADATA",
     "ScenarioRunner"
 ]
+
+
+# -----------------------------
+# Helpers and metadata
+# -----------------------------
+def _now_iso() -> str:
+    return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+
+def _gen_id(prefix: str) -> str:
+    return f"{prefix}_{random.randint(10000, 99999)}"
+
+
+def _error(tool_name: str, code: str, message: str, extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    base: Dict[str, Any] = {
+        "tool_name": tool_name,
+        "status": "error",
+        "error_code": code,
+        "error_message": message,
+        "timestamp": _now_iso(),
+    }
+    if extra:
+        base.update(extra)
+    return base
+
+
+TOOL_METADATA: Dict[str, Dict[str, Any]] = {
+    "issue_voucher": {"approval_threshold": 50.0},
+    "issue_instant_refund": {"approval_threshold": 50.0},
+}
 
 
 
