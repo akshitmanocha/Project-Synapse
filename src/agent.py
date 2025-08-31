@@ -98,7 +98,7 @@ def _get_llm() -> ChatGoogleGenerativeAI:
 	if not os.getenv("GEMINI_API_KEY"):
 		raise RuntimeError("GEMINI_API_KEY not set in environment.")
 	# Instantiate LLM lazily - using Gemini model
-	return ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=os.getenv("GEMINI_API_KEY"))
+	return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=os.getenv("GEMINI_API_KEY"))
 
 
 def _format_history(steps: List[Dict[str, Any]]) -> str:
