@@ -37,6 +37,11 @@ Notes:
 - Keep tools deterministic enough for tests when needed; allow seeding via random if desired.
 - Replace implementations with real integrations later (APIs/DBs/SDKs). Keep function signatures stable.
 """
+from __future__ import annotations
+
+import random
+import time
+from typing import Literal, Optional
 from typing import Optional, Dict, Any, List
 import random, datetime, uuid, json, os
 
@@ -94,11 +99,7 @@ def _error(tool_name: str, code: str, message: str, details: Optional[Dict[str,A
         "timestamp": _now_iso()
     }
 
-from __future__ import annotations
 
-import random
-import time
-from typing import Literal, Optional
 
 __all__ = [
     "get_merchant_status",
