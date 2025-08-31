@@ -37,6 +37,62 @@ Notes:
 - Keep tools deterministic enough for tests when needed; allow seeding via random if desired.
 - Replace implementations with real integrations later (APIs/DBs/SDKs). Keep function signatures stable.
 """
+from typing import Optional, Dict, Any, List
+import random, datetime, uuid, json, os
+
+def _now_iso() -> str:
+    return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+def _gen_id(prefix: str="id") -> str:
+    return f"{prefix}_{uuid.uuid4().hex[:8]}"
+
+# -----------------------------
+# TOOL METADATA (for validation)
+# -----------------------------
+TOOL_METADATA = {
+    "get_merchant_status": {"verticals":["GrabFood","GrabMart"], "params":["merchant_id"], "cost":"low"},
+    "get_nearby_merchants": {"verticals":["GrabFood","GrabMart"], "params":["lat","lng"], "cost":"low"},
+    "notify_customer": {"verticals":["All"], "params":["customer_id","message"], "cost":"low"},
+    "issue_voucher": {"verticals":["GrabFood","GrabMart"], "params":["customer_id","amount"], "cost":"low", "approval_threshold":50.0},
+    "collect_evidence": {"verticals":["GrabFood","GrabMart"], "params":["order_id"], "cost":"low"},
+    "analyze_evidence": {"verticals":["GrabFood","GrabMart"], "params":["evidence_id"], "cost":"medium"},
+    "issue_instant_refund": {"verticals":["GrabFood","GrabMart"], "params":["order_id","amount"], "cost":"medium", "approval_threshold":50.0},
+    "exonerate_driver": {"verticals":["All"], "params":["driver_id"], "cost":"low"},
+    "log_merchant_packaging_feedback": {"verticals":["GrabFood","GrabMart"], "params":["merchant_id","feedback"], "cost":"low"},
+    "contact_merchant": {"verticals":["GrabFood","GrabMart"], "params":["merchant_id","message"], "cost":"low"},
+    "propose_substitute": {"verticals":["GrabFood","GrabMart"], "params":["order_id","substitute_items"], "cost":"low"},
+    "contact_recipient_via_chat": {"verticals":["GrabExpress"], "params":["recipient_id","message"], "cost":"low"},
+    "suggest_safe_drop_off": {"verticals":["GrabExpress"], "params":["options"], "cost":"low"},
+    "find_nearby_locker": {"verticals":["GrabExpress"], "params":["lat","lng"], "cost":"low"},
+    "schedule_redelivery": {"verticals":["GrabExpress"], "params":["order_id","windows"], "cost":"low"},
+    "verify_address_with_customer": {"verticals":["GrabExpress"], "params":["customer_id","provided_address"], "cost":"low"},
+    "contact_sender": {"verticals":["GrabExpress"], "params":["sender_id","message"], "cost":"low"},
+    "check_traffic": {"verticals":["GrabCar"], "params":["route_id"], "cost":"low"},
+    "calculate_alternative_route": {"verticals":["GrabCar"], "params":["route_id"], "cost":"low"},
+    "notify_passenger_and_driver": {"verticals":["GrabCar"], "params":["trip_id","message"], "cost":"low"},
+    "check_flight_status": {"verticals":["GrabCar"], "params":["flight_number"], "cost":"low"},
+    "reroute_driver_to_safe_location": {"verticals":["GrabCar"], "params":["driver_id","location"], "cost":"low"},
+    "contact_support_live": {"verticals":["All"], "params":["issue","priority"], "cost":"high"},
+    "locate_trip_path": {"verticals":["All"], "params":["trip_id"], "cost":"low"},
+    "initiate_lost_and_found_flow": {"verticals":["All"], "params":["trip_id"], "cost":"low"},
+    "get_driver_status": {"verticals":["All"], "params":["driver_id"], "cost":"low"},
+    "hold_order_with_merchant": {"verticals":["GrabFood","GrabMart"], "params":["order_id","merchant_id"], "cost":"low"},
+    "issue_partial_refund": {"verticals":["GrabFood","GrabMart"], "params":["order_id","amount"], "cost":"low"},
+    "re_route_driver": {"verticals":["All"], "params":["driver_id","new_route"], "cost":"low"},
+}
+
+# -----------------------------
+# Helper: error response builder
+# -----------------------------
+def _error(tool_name: str, code: str, message: str, details: Optional[Dict[str,Any]]=None) -> Dict[str,Any]:
+    return {
+        "tool_name": tool_name,
+        "status": "error",
+        "error_code": code,
+        "message": message,
+        "details": details or {},
+        "timestamp": _now_iso()
+    }
 
 from __future__ import annotations
 
