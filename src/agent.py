@@ -49,7 +49,7 @@ from langgraph.graph import StateGraph, END
 import concurrent.futures
 
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from . import tools as sim_tools
 
@@ -90,15 +90,15 @@ def _load_system_prompt() -> str:
 		)
 
 
-def _get_llm() -> ChatGroq:
-	"""Return a configured Groq chat model. Relies on GROQ_API_KEY in env."""
+def _get_llm() -> ChatGoogleGenerativeAI:
+	"""Return a configured Google Gemini chat model. Relies on GEMINI_API_KEY in env."""
 	# Best-effort .env loading
 	load_dotenv(override=False)
 	# Ensure key exists to avoid opaque hangs
-	if not os.getenv("GROQ_API_KEY"):
-		raise RuntimeError("GROQ_API_KEY not set in environment.")
-	# Instantiate LLM lazily
-	return ChatGroq(model_name="openai/gpt-oss-120b")
+	if not os.getenv("GEMINI_API_KEY"):
+		raise RuntimeError("GEMINI_API_KEY not set in environment.")
+	# Instantiate LLM lazily - using Gemini model
+	return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=os.getenv("GEMINI_API_KEY"))
 
 
 def _format_history(steps: List[Dict[str, Any]]) -> str:
@@ -433,8 +433,8 @@ def debug_components(verbose: bool = False) -> bool:
 				print(f"  Model: {getattr(llm, 'model_name', 'unknown')}")
 		except Exception as e:
 			print(f"✗ LLM initialization failed: {e}")
-			if 'GROQ_API_KEY' in str(e):
-				print("  Check your .env file has GROQ_API_KEY set")
+			if 'GEMINI_API_KEY' in str(e):
+				print("  Check your .env file has GEMINI_API_KEY set")
 			return False
 		
 		return True
@@ -469,8 +469,8 @@ def debug_llm_connection(verbose: bool = False) -> bool:
 		print(f"✗ LLM test failed: {e}")
 		if 'rate_limit' in str(e).lower() or '429' in str(e):
 			print("  Rate limit error - wait a few minutes or use different model")
-		elif 'GROQ_API_KEY' in str(e):
-			print("  Check your GROQ_API_KEY in .env file")
+		elif 'GEMINI_API_KEY' in str(e):
+			print("  Check your GEMINI_API_KEY in .env file")
 		return False
 
 
@@ -512,10 +512,12 @@ def debug_all(verbose: bool = False) -> bool:
 	
 	# Environment check
 	load_dotenv(override=False)
-	api_key = os.getenv("GROQ_API_KEY")
-	print(f"GROQ_API_KEY loaded: {bool(api_key)}")
-	if api_key and verbose:
-		print(f"Key starts with: {api_key[:10]}...")
+	gemini_key = os.getenv("GEMINI_API_KEY")
+	groq_key = os.getenv("GROQ_API_KEY")
+	print(f"GEMINI_API_KEY loaded: {bool(gemini_key)}")
+	print(f"GROQ_API_KEY loaded: {bool(groq_key)}")
+	if gemini_key and verbose:
+		print(f"Gemini key starts with: {gemini_key[:10]}...")
 	print()
 	
 	tests = [
