@@ -379,11 +379,199 @@ def run_agent(input_text: str) -> AgentState:
 	return final_state
 
 
-if __name__ == "__main__":
-	# Minimal smoke test (won't run the LLM unless GROQ_API_KEY is set)
-	problem = "A driver is en route to Restaurant XYZ, but there's a report of a major accident on the main highway."
+def debug_components(verbose: bool = False) -> bool:
+	"""Debug individual agent components. Returns True if all tests pass."""
+	print("=== Agent Component Debug ===")
+	
 	try:
-		result = run_agent(problem)
-		print(json.dumps(result, indent=2, ensure_ascii=False))
+		# Test system prompt
+		prompt = _load_system_prompt()
+		if len(prompt) > 50:
+			print("✓ System prompt loaded")
+		else:
+			print("✗ System prompt too short or missing")
+			return False
+		
+		# Test action parsing
+		test_text = '''
+		Thought: I need to check traffic.
+		Action: {"tool_name": "check_traffic", "parameters": {"route": "test"}}
+		'''
+		action, thought = _parse_action(test_text)
+		if action and action.get('tool_name') == 'check_traffic':
+			print("✓ Action parsing working")
+			if verbose:
+				print(f"  Parsed action: {action}")
+				print(f"  Parsed thought: {thought}")
+		else:
+			print(f"✗ Action parsing failed: {action}")
+			return False
+		
+		# Test tool registry
+		registry = _tool_registry()
+		if len(registry) >= 5:
+			print(f"✓ Tool registry loaded ({len(registry)} tools)")
+			if verbose:
+				print(f"  Available tools: {list(registry.keys())}")
+		else:
+			print("✗ Tool registry incomplete")
+			return False
+		
+		# Test graph building
+		graph = build_graph()
+		if graph:
+			print("✓ LangGraph built successfully")
+		else:
+			print("✗ Graph building failed")
+			return False
+		
+		# Test LLM initialization
+		try:
+			llm = _get_llm()
+			print("✓ LLM initialized")
+			if verbose:
+				print(f"  Model: {getattr(llm, 'model_name', 'unknown')}")
+		except Exception as e:
+			print(f"✗ LLM initialization failed: {e}")
+			if 'GROQ_API_KEY' in str(e):
+				print("  Check your .env file has GROQ_API_KEY set")
+			return False
+		
+		return True
+		
 	except Exception as e:
-		print(f"Agent run failed: {e}")
+		print(f"✗ Component debug failed: {e}")
+		return False
+
+
+def debug_llm_connection(verbose: bool = False) -> bool:
+	"""Test LLM connection with a simple call. Returns True if successful."""
+	print("=== LLM Connection Debug ===")
+	
+	try:
+		from langchain_core.messages import HumanMessage
+		
+		llm = _get_llm()
+		messages = [HumanMessage(content='Respond with exactly: {"status": "ok"}')]
+		response = llm.invoke(messages)
+		
+		if verbose:
+			print(f"Response: {response.content}")
+		
+		if '"status"' in response.content and '"ok"' in response.content:
+			print("✓ LLM responding correctly")
+			return True
+		else:
+			print(f"✗ LLM response unexpected: {response.content}")
+			return False
+			
+	except Exception as e:
+		print(f"✗ LLM test failed: {e}")
+		if 'rate_limit' in str(e).lower() or '429' in str(e):
+			print("  Rate limit error - wait a few minutes or use different model")
+		elif 'GROQ_API_KEY' in str(e):
+			print("  Check your GROQ_API_KEY in .env file")
+		return False
+
+
+def debug_simple_run(verbose: bool = False) -> bool:
+	"""Test agent with a simple problem. Returns True if successful."""
+	print("=== Simple Agent Run Debug ===")
+	
+	try:
+		simple_problem = "Check traffic on route DEBUG."
+		result = run_agent(simple_problem)
+		
+		if result.get('done'):
+			print("✓ Agent completed successfully")
+			print(f"  Final plan: {result.get('plan', 'None')[:100]}...")
+			print(f"  Steps taken: {len(result.get('steps', []))}")
+			
+			if verbose:
+				print("  Full result:")
+				print(json.dumps(result, indent=2, ensure_ascii=False))
+			
+			return True
+		else:
+			print("✗ Agent did not complete")
+			if verbose:
+				print(f"  Current state: {result}")
+			return False
+			
+	except Exception as e:
+		print(f"✗ Agent test failed: {e}")
+		if 'rate_limit' in str(e).lower() or '429' in str(e):
+			print("  Rate limit hit - wait or use different model")
+		return False
+
+
+def debug_all(verbose: bool = False) -> bool:
+	"""Run all debug tests. Returns True if all pass."""
+	print("Synapse Agent Debug")
+	print("=" * 40)
+	
+	# Environment check
+	load_dotenv(override=False)
+	api_key = os.getenv("GROQ_API_KEY")
+	print(f"GROQ_API_KEY loaded: {bool(api_key)}")
+	if api_key and verbose:
+		print(f"Key starts with: {api_key[:10]}...")
+	print()
+	
+	tests = [
+		("Components", lambda: debug_components(verbose)),
+		("LLM Connection", lambda: debug_llm_connection(verbose)),
+		("Simple Run", lambda: debug_simple_run(verbose))
+	]
+	
+	passed = 0
+	for test_name, test_func in tests:
+		print(f"Running {test_name} test...")
+		if test_func():
+			passed += 1
+		print()
+	
+	print("=" * 40)
+	print(f"Results: {passed}/{len(tests)} tests passed")
+	
+	if passed == len(tests):
+		print("✓ All tests passed! Agent is working correctly.")
+	else:
+		print("✗ Some tests failed. Check errors above.")
+	
+	return passed == len(tests)
+
+
+if __name__ == "__main__":
+	import sys
+	
+	if len(sys.argv) > 1:
+		if sys.argv[1] == "--debug":
+			verbose = "--verbose" in sys.argv or "-v" in sys.argv
+			debug_all(verbose)
+		elif sys.argv[1] == "--debug-components":
+			debug_components(True)
+		elif sys.argv[1] == "--debug-llm":
+			debug_llm_connection(True)
+		elif sys.argv[1] == "--debug-simple":
+			debug_simple_run(True)
+		elif sys.argv[1] == "--help":
+			print("Usage:")
+			print("  python -m src.agent                    # Run default scenario")
+			print("  python -m src.agent --debug            # Run all debug tests")
+			print("  python -m src.agent --debug --verbose  # Verbose debug output")
+			print("  python -m src.agent --debug-components # Test components only")
+			print("  python -m src.agent --debug-llm        # Test LLM only")
+			print("  python -m src.agent --debug-simple     # Test simple agent run")
+		else:
+			print(f"Unknown option: {sys.argv[1]}")
+			print("Use --help for available options")
+	else:
+		# Default behavior - run the main scenario
+		problem = "A driver is en route to Restaurant XYZ, but there's a report of a major accident on the main highway."
+		try:
+			result = run_agent(problem)
+			print(json.dumps(result, indent=2, ensure_ascii=False))
+		except Exception as e:
+			print(f"Agent run failed: {e}")
+			print("\nTry running with --debug to diagnose issues:")

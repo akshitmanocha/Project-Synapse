@@ -717,7 +717,140 @@ def _demo():
     res = find_nearby_locker(1.3521, 103.8198, seed=seed)
     print("find_nearby_locker example:"); pp.pprint(res); print()
 
-    print("Demo complete. File saved as simulated_tools_full.py")
+    print("Demo complete.")
+
+
+def debug_tools(verbose: bool = False) -> bool:
+    """Debug tools module functionality. Returns True if all tests pass."""
+    print("=== Tools Module Debug ===")
+    
+    try:
+        # Test core tools with deterministic seed
+        seed = 42
+        tests_passed = 0
+        total_tests = 0
+        
+        # Test check_traffic
+        total_tests += 1
+        result = check_traffic("debug_route", seed=seed)
+        if result.get('status') == 'ok' and result.get('tool_name') == 'check_traffic':
+            print("✓ check_traffic working")
+            tests_passed += 1
+            if verbose:
+                print(f"  Result: {result}")
+        else:
+            print(f"✗ check_traffic failed: {result}")
+        
+        # Test get_merchant_status
+        total_tests += 1
+        result = get_merchant_status("debug_merchant", seed=seed)
+        if result.get('status') == 'ok' and result.get('tool_name') == 'get_merchant_status':
+            print("✓ get_merchant_status working")
+            tests_passed += 1
+            if verbose:
+                print(f"  Result: prep_time={result.get('prep_time_mins')}min")
+        else:
+            print(f"✗ get_merchant_status failed: {result}")
+        
+        # Test notify_customer
+        total_tests += 1
+        result = notify_customer("debug_customer", "Test message", seed=seed)
+        if result.get('status') == 'ok' and result.get('tool_name') == 'notify_customer':
+            print("✓ notify_customer working")
+            tests_passed += 1
+            if verbose:
+                print(f"  Delivered: {result.get('delivered')}")
+        else:
+            print(f"✗ notify_customer failed: {result}")
+        
+        # Test get_nearby_merchants
+        total_tests += 1
+        result = get_nearby_merchants(1.3521, 103.8198, seed=seed)
+        if result.get('status') == 'ok' and result.get('tool_name') == 'get_nearby_merchants':
+            print("✓ get_nearby_merchants working")
+            tests_passed += 1
+            if verbose:
+                merchants = result.get('merchants', [])
+                print(f"  Found {len(merchants)} merchants")
+        else:
+            print(f"✗ get_nearby_merchants failed: {result}")
+        
+        # Test re_route_driver
+        total_tests += 1
+        result = re_route_driver("debug_driver", {"description": "test route"}, seed=seed)
+        if result.get('status') == 'ok' and result.get('tool_name') == 're_route_driver':
+            print("✓ re_route_driver working")
+            tests_passed += 1
+            if verbose:
+                print(f"  Status: {result.get('status_text')}")
+        else:
+            print(f"✗ re_route_driver failed: {result}")
+        
+        # Test error handling
+        total_tests += 1
+        result = check_traffic("", seed=seed)  # Empty route should cause error
+        if result.get('status') == 'error':
+            print("✓ Error handling working")
+            tests_passed += 1
+            if verbose:
+                print(f"  Error: {result.get('error_message')}")
+        else:
+            print(f"✗ Error handling failed: {result}")
+        
+        print(f"Tools module: {tests_passed}/{total_tests} tests passed")
+        return tests_passed == total_tests
+        
+    except Exception as e:
+        print(f"✗ Tools debug failed: {e}")
+        return False
+
+
+def debug_tool_metadata() -> bool:
+    """Debug tool metadata structure."""
+    print("=== Tool Metadata Debug ===")
+    
+    try:
+        print(f"✓ TOOL_METADATA loaded with {len(TOOL_METADATA)} tools")
+        
+        # Check some key tools exist
+        required_tools = ['check_traffic', 'get_merchant_status', 'notify_customer']
+        missing = [tool for tool in required_tools if tool not in TOOL_METADATA]
+        
+        if missing:
+            print(f"✗ Missing metadata for tools: {missing}")
+            return False
+        else:
+            print("✓ Core tool metadata present")
+            return True
+            
+    except Exception as e:
+        print(f"✗ Metadata debug failed: {e}")
+        return False
+
 
 if __name__ == "__main__":
-    _demo()
+    import sys
+    
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--debug":
+            verbose = "--verbose" in sys.argv or "-v" in sys.argv
+            print("Tools Module Debug")
+            print("=" * 30)
+            
+            success = debug_tools(verbose) and debug_tool_metadata()
+            
+            if success:
+                print("\n✓ All tools tests passed!")
+            else:
+                print("\n✗ Some tools tests failed!")
+            
+        elif sys.argv[1] == "--help":
+            print("Usage:")
+            print("  python -m src.tools           # Run demo")
+            print("  python -m src.tools --debug   # Run debug tests")
+            print("  python -m src.tools --debug --verbose  # Verbose debug")
+        else:
+            print(f"Unknown option: {sys.argv[1]}")
+            print("Use --help for available options")
+    else:
+        _demo()
