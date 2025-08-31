@@ -46,13 +46,13 @@ import re
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 import concurrent.futures
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
+Updated upstream
+
 import threading
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+
+Stashed changes
+
+
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_groq import ChatGroq
 
@@ -385,6 +385,7 @@ def run_agent(input_text: str) -> AgentState:
 
 
 if __name__ == "__main__":
+
 	# Minimal smoke test (won't run the LLM unless GROQ_API_KEY is set)
 	problem = "A driver is en route to Restaurant XYZ, but there's a report of a major accident on the main highway."
 	try:
@@ -392,3 +393,11 @@ if __name__ == "__main__":
 		print(json.dumps(result, indent=2, ensure_ascii=False))
 	except Exception as e:
 		print(f"Agent run failed: {e}")
+
+		# Smoke entry for later manual testing
+		# Example usage (future):
+		# final_state = run_agent("Reroute the driver if traffic is heavy.")
+		# print(final_state)
+		# test
+		pass
+
