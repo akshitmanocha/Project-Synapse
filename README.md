@@ -26,13 +26,17 @@ Project Synapse is a sophisticated **autonomous AI agent** designed specifically
 - **Learning Integration**: Incorporates failure patterns to improve future decision-making
 
 **🛠️ Comprehensive Tool Ecosystem**
-- **18+ Specialized Tools** across 6 categories:
-  - 🚗 Traffic & Routing (traffic analysis, re-routing)
-  - 🏪 Merchant Operations (status checks, communication, alternatives)
-  - 📱 Customer Communication (notifications, multi-channel contact)
-  - 🚚 Driver Management (status, coordination, exoneration)
-  - 🕵️ Evidence & Disputes (collection, analysis, fault determination)
-  - 💰 Refund Processing (instant, partial refunds)
+- **32+ Specialized Tools** across 10 categories:
+  - 🚗 Core Operations (traffic analysis, merchant status, customer notifications, re-routing, nearby merchants)
+  - 🕵️ Evidence & Disputes (collection, analysis, instant refunds, driver exoneration)
+  - 📦 Stock Management (merchant contact, substitute proposals, partial refunds)
+  - 📝 Feedback & Prevention (merchant packaging feedback)
+  - 📞 Recipient Unavailable & Delivery (recipient contact, safe drop-off, locker search, redelivery, sender contact)
+  - 🚛 Unresponsive Driver (driver status, booking cancellation, replacement driver search)
+  - 🗺️ Address Verification (customer address confirmation)
+  - 🚧 Traffic Management (alternative route calculation)
+  - 🔍 Lost & Found (trip path location, lost item case initiation)
+  - ⚠️ Safety & Routing (safe location rerouting, passenger/driver notifications)
 
 ### 🌟 Key Features
 
@@ -42,7 +46,7 @@ Project Synapse is a sophisticated **autonomous AI agent** designed specifically
 | **Progressive Complexity Handling** | Scales from basic delays to complex dispute resolution |
 | **Real-Time Decision Making** | Sub-second responses for urgent logistics situations |
 | **Professional CLI Interface** | Beautiful, structured output with clear reasoning visualization |
-| **Scenario-Based Testing** | 8 predefined scenarios covering common logistics challenges |
+| **Scenario-Based Testing** | 13 predefined scenarios covering comprehensive logistics challenges |
 | **Comprehensive Logging** | Full chain-of-thought tracking for audit and improvement |
 
 ## 🏗️ Project Architecture
@@ -92,8 +96,8 @@ setup.py                    # Package installation configuration
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/synapse-agent.git
-cd synapse-agent
+git clone https://github.com/yourusername/Project-Synapse.git
+cd Project-Synapse
 
 # Verify project structure
 ls -la
@@ -112,36 +116,42 @@ source .venv/bin/activate
 # On Windows:
 .venv\Scripts\activate
 
-# Verify activation (should show synapse-agent path)
+# Verify activation (should show Project-Synapse path)
 which python
 ```
 
 ### Step 3: Install Dependencies
 
 ```bash
-# Install package in development mode
+# Method 1: Full package installation (recommended)
+# This installs the package and creates the 'synapse-agent' console command
 pip install -e .
 
-# Alternative: Install from requirements.txt
+# Method 2: Dependencies only
+# This only installs requirements, no console command
 pip install -r requirements.txt
 
 # Verify installation
 python -c "import synapse; print('✅ Synapse installed successfully')"
+
+# Test console command (only works with Method 1)
+synapse-agent --help
 ```
+
+**Installation Methods:**
+- **Method 1** (`pip install -e .`): Full package install + console command
+- **Method 2** (`pip install -r requirements.txt`): Dependencies only, use `python main.py`
 
 ### Step 4: API Key Configuration
 
 **Option A: Environment File (Recommended)**
 ```bash
-# Create config directory if it doesn't exist
-mkdir -p config
+# Copy the provided template
+cp .env.template .env
 
-# Create environment file
-echo "GEMINI_API_KEY=your_api_key_here" > config/.env
-
-# Alternative: Copy template (if available)
-cp config/env.example config/.env
-# Then edit config/.env with your API key
+# Edit .env file with your actual API key
+# Replace 'your_gemini_api_key_here' with your actual Gemini API key
+nano .env  # or use your preferred editor
 ```
 
 **Option B: Direct Environment Variable**
@@ -167,12 +177,17 @@ source ~/.bashrc
 # Test CLI functionality
 python main.py --help
 
-# Test with installed command
-synapse-agent --list-scenarios
+# List all available scenarios
+python main.py --list-scenarios
 
 # Run basic functionality test
 python main.py --debug-tools
+
+# Run comprehensive system check
+python synapse/agent/agent.py --debug --verbose
 ```
+
+> **🎯 For detailed setup instructions and troubleshooting, see [SETUP_GUIDE.md](SETUP_GUIDE.md)**
 
 ## 🎮 How to Use the CLI
 
@@ -180,20 +195,23 @@ python main.py --debug-tools
 
 **Direct Problem Input**
 ```bash
-# Solve any logistics problem directly
+# Using main.py (always works)
 python main.py "Driver stuck in traffic, 45-minute delay expected"
 
-# Using the installed command
+# Using console command (if installed with pip install -e .)
 synapse-agent "Package damaged during delivery, customer disputes fault"
 ```
 
 **Predefined Scenarios**
 ```bash
-# Use built-in scenario 2.4 (recipient unavailable)
+# Using main.py (recommended)
 python main.py --scenario 2.4
 
-# Traffic delay scenario with verbose output
+# Using console command (alternative)
 synapse-agent --scenario traffic --verbose
+
+# Test unresponsive driver scenario
+python main.py --scenario 2.9
 ```
 
 **Output Customization**
@@ -213,6 +231,7 @@ python main.py --no-banner "Order dispute at customer location"
 | Command | Description | Example |
 |---------|-------------|---------|
 | `python main.py "problem"` | Solve custom logistics problem | `python main.py "Driver lost, can't find address"` |
+| `synapse-agent "problem"` | Alternative console command | `synapse-agent "Package delayed"` |
 | `--scenario X` | Use predefined scenario | `--scenario 2.3` |
 | `--list-scenarios` | Show all available scenarios | `python main.py -l` |
 | `--verbose` | Show detailed technical information | `--verbose` |
@@ -486,7 +505,7 @@ with minimal additional delay through proactive address confirmation.
 
 **Example 7: Traffic Delay with Verbose Output**
 ```bash
-$ synapse-agent --scenario traffic --verbose
+$ python main.py --scenario traffic --verbose
 
 [Detailed output showing full parameters, complete observations, and technical debugging information]
 ```
@@ -557,8 +576,8 @@ def test_custom_scenario():
 |--------|-------------|
 | **Response Time** | Sub-second for urgent decisions |
 | **Success Rate** | 95%+ with reflection system |
-| **Tool Integration** | 18 tools working seamlessly |
-| **Scenario Coverage** | 8 comprehensive test scenarios |
+| **Tool Integration** | 32 tools working seamlessly |
+| **Scenario Coverage** | 13 comprehensive test scenarios |
 | **Reflection Accuracy** | 90%+ correct alternative suggestions |
 
 ### Scalability
@@ -599,9 +618,35 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **[LangChain](https://github.com/langchain-ai/langchain)** - LLM application framework
 - **[Python Community](https://www.python.org/)** - Foundation and ecosystem
 
+## 📁 Updated Project Files
+
+### **New Setup & Configuration Files**
+- **`.env.template`** - Environment configuration template with all required variables
+- **`SETUP_GUIDE.md`** - Comprehensive setup guide with troubleshooting for fresh installations
+- **Updated `requirements.txt`** - Corrected dependencies (now includes `langchain-google-genai`)
+
+### **Current Dependencies**
+```
+python-dotenv          # Environment variable management
+langchain             # Core LLM framework
+langchain-core        # LangChain core components  
+langchain-google-genai # Google Gemini integration (NEW)
+langgraph            # State graph orchestration
+```
+
+### **Complete Tool Registry (32 Tools)**
+The agent now includes tools for:
+- **Scenario 2.4**: Recipient unavailable (contact, drop-off, lockers, redelivery, sender contact)
+- **Scenario 2.5**: Address verification (customer address confirmation) 
+- **Scenario 2.6**: Traffic obstruction (alternative route calculation)
+- **Scenario 2.7**: Lost & found (trip location, case initiation)
+- **Scenario 2.8**: Unsafe conditions (safe rerouting, notifications)
+- **Scenario 2.9**: Unresponsive driver (status check, cancellation, replacement)
+
 ## 📞 Support & Contact
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/synapse-agent/issues)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/Project-Synapse/issues)
+- **Setup Guide**: [SETUP_GUIDE.md](SETUP_GUIDE.md) - **Start here for fresh installations**
 - **Documentation**: [docs/](docs/)
 - **Examples**: [examples/](examples/)
 

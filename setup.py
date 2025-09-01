@@ -17,7 +17,7 @@ setup(
     description="Autonomous Logistics Coordination Agent with adaptive problem-solving",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/synapse-agent",
+    url="https://github.com/yourusername/Project-Synapse",
     packages=find_packages(exclude=["tests", "tests.*", "docs", "examples"]),
     classifiers=[
         "Development Status :: 4 - Beta",
