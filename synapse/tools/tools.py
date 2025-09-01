@@ -139,6 +139,8 @@ TOOL_METADATA = {
     "hold_order_with_merchant": {"verticals":["GrabFood","GrabMart"], "params":["order_id","merchant_id"], "cost":"low"},
     "issue_partial_refund": {"verticals":["GrabFood","GrabMart"], "params":["order_id","amount"], "cost":"low"},
     "re_route_driver": {"verticals":["All"], "params":["driver_id","new_route"], "cost":"low"},
+    "cancel_booking": {"verticals":["All"], "params":["booking_id","reason"], "cost":"low"},
+    "find_replacement_driver": {"verticals":["All"], "params":["booking_id","location"], "cost":"medium"},
 }
 
 # -----------------------------
@@ -186,6 +188,8 @@ __all__ = [
     "hold_order_with_merchant",
     "issue_partial_refund",
     "re_route_driver",
+    "cancel_booking",
+    "find_replacement_driver",
     "TOOL_METADATA",
     "ScenarioRunner"
 ]
@@ -693,6 +697,60 @@ def re_route_driver(driver_id: str, new_route: Dict[str,Any], seed: Optional[int
         "status_text": "rerouted",
         "timestamp": _now_iso()
     }
+
+def cancel_booking(booking_id: str, reason: str, seed: Optional[int]=None) -> Dict[str,Any]:
+    tool = "cancel_booking"
+    if not booking_id or not reason:
+        return _error(tool, "INVALID_PARAM", "booking_id and reason required")
+    if seed is not None:
+        random.seed(seed)
+    # Simulate potential cancellation issues
+    cancellation_successful = random.random() > 0.05  # 95% success rate
+    cancellation_id = _gen_id("cancel")
+    return {
+        "tool_name": tool,
+        "status": "ok" if cancellation_successful else "error",
+        "booking_id": booking_id,
+        "cancellation_id": cancellation_id if cancellation_successful else None,
+        "cancelled": cancellation_successful,
+        "reason": reason,
+        "refund_processed": cancellation_successful,
+        "error_message": None if cancellation_successful else "Cancellation failed - booking may be too advanced",
+        "timestamp": _now_iso()
+    }
+
+def find_replacement_driver(booking_id: str, location: Dict[str,Any], seed: Optional[int]=None) -> Dict[str,Any]:
+    tool = "find_replacement_driver"
+    if not booking_id or location is None:
+        return _error(tool, "INVALID_PARAM", "booking_id and location required")
+    if seed is not None:
+        random.seed(seed)
+    # Simulate driver availability
+    drivers_available = random.random() > 0.3  # 70% chance of finding replacement
+    if drivers_available:
+        replacement_driver_id = _gen_id("driver")
+        eta_mins = random.choice([5, 10, 15, 20])
+        return {
+            "tool_name": tool,
+            "status": "ok",
+            "booking_id": booking_id,
+            "replacement_driver_id": replacement_driver_id,
+            "driver_found": True,
+            "eta_minutes": eta_mins,
+            "driver_location": {"lat": location.get("lat", 1.35) + random.random()*0.01, 
+                              "lng": location.get("lng", 103.8) + random.random()*0.01},
+            "timestamp": _now_iso()
+        }
+    else:
+        return {
+            "tool_name": tool,
+            "status": "error",
+            "booking_id": booking_id,
+            "driver_found": False,
+            "error_message": "No available drivers in the area",
+            "suggested_wait_time": random.choice([15, 20, 30]),
+            "timestamp": _now_iso()
+        }
 
 # -----------------------------
 # ScenarioRunner (lightweight)
