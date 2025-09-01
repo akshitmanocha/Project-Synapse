@@ -7,9 +7,14 @@ and ensure it follows the ANALYZE -> STRATEGIZE -> EXECUTE -> ADAPT framework.
 """
 
 import json
+import sys
+import os
 import time
 from typing import Dict, Any, List
-from src.agent import run_agent
+
+# Add project root to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+from synapse import run_agent
 
 
 class ScenarioTester:
@@ -740,6 +745,609 @@ class ScenarioTester:
             print(f"\nERROR running scenario: {e}")
             return error_result
     
+    def run_scenario_2_5(self):
+        """Test Scenario 2.5: Incorrect or Incomplete Address"""
+        print("\n" + "="*60)
+        print("SCENARIO 2.5: INCORRECT OR INCOMPLETE ADDRESS")
+        print("="*60)
+        
+        start_time = time.time()
+        
+        try:
+            problem = (
+                "Driver has arrived at 1234 Main Street for a food delivery but cannot locate "
+                "the recipient. The address appears to be a large apartment complex with multiple "
+                "buildings but no unit number was provided. Driver has been searching for 15 minutes "
+                "and needs guidance to complete the delivery."
+            )
+            
+            print(f"Problem: {problem}")
+            print("-" * 60)
+            
+            # Run agent
+            result = self.run_agent_with_problem(problem)
+            
+            execution_time = time.time() - start_time
+            
+            # Display chain of thought
+            self.display_chain_of_thought(result)
+            
+            # Display final plan
+            print(f"\nFINAL PLAN:")
+            print(f"  {result.get('plan', 'No plan generated')}")
+            
+            print(f"\nCOMPLETED: {result.get('done', False)}")
+            print("="*60)
+            
+            # Validate reasoning
+            validation = self.validate_scenario_2_5_reasoning(result)
+            
+            print(f"\nVALIDATION RESULTS:")
+            print("-" * 30)
+            for key, value in validation.items():
+                status = "✅" if value else "❌"
+                print(f"{status} {key}: {value}")
+            
+            success_rate = sum(validation.values()) / len(validation)
+            print(f"\n📊 SUCCESS RATE: {success_rate:.2%}")
+            print(f"⏱️  EXECUTION TIME: {execution_time:.2f}s")
+            
+            scenario_result = {
+                'scenario': 'Incorrect or Incomplete Address',
+                'problem': problem,
+                'result': result,
+                'validation': validation,
+                'success_rate': success_rate,
+                'execution_time': execution_time
+            }
+            
+            self.results['scenario_2_5'] = scenario_result
+            return scenario_result
+            
+        except Exception as e:
+            error_result = {
+                'scenario': 'Incorrect or Incomplete Address',
+                'problem': problem,
+                'error': str(e),
+                'success_rate': 0.0,
+                'execution_time': time.time() - start_time
+            }
+            self.results['scenario_2_5'] = error_result
+            print(f"\nERROR running scenario: {e}")
+            return error_result
+
+    def validate_scenario_2_5_reasoning(self, result: Dict[str, Any]) -> Dict[str, bool]:
+        """Validate that the agent properly handles incorrect or incomplete address scenario."""
+        validation = {
+            'verified_address_with_customer': False,
+            'handled_address_correction': False,
+            'rerouted_driver_appropriately': False,
+            'escalated_when_needed': False,
+            'minimized_delivery_delay': False,
+            'comprehensive_address_plan': False
+        }
+        
+        steps = result.get('steps', [])
+        plan = result.get('plan', '').lower()
+        
+        # Check tools used
+        tools_used = [step.get('action', {}).get('tool_name') for step in steps if step.get('action')]
+        
+        # Check if key address verification tools were used appropriately
+        if 'verify_address_with_customer' in tools_used:
+            validation['verified_address_with_customer'] = True
+            
+        if 're_route_driver' in tools_used:
+            validation['rerouted_driver_appropriately'] = True
+            
+        if 'contact_sender' in tools_used:
+            validation['escalated_when_needed'] = True
+            
+        # Validate comprehensive address resolution plan
+        address_keywords = ['address', 'location', 'unit', 'building', 'apartment', 'verify', 'correct']
+        if any(keyword in plan for keyword in address_keywords) and len(plan) > 100:
+            validation['comprehensive_address_plan'] = True
+            
+        # Additional validation through reasoning steps
+        all_thoughts = ' '.join([step.get('thought', '').lower() for step in steps if step.get('thought')])
+        
+        # Check for appropriate reasoning patterns
+        if any(word in all_thoughts for word in ['verify', 'address', 'customer', 'confirm', 'location']):
+            validation['verified_address_with_customer'] = True
+            
+        if any(word in all_thoughts for word in ['correct', 'update', 'new', 'fix', 'address']):
+            validation['handled_address_correction'] = True
+            
+        if any(word in all_thoughts for word in ['reroute', 'redirect', 'new', 'location', 'driver']):
+            validation['rerouted_driver_appropriately'] = True
+            
+        if any(word in all_thoughts for word in ['sender', 'escalate', 'contact', 'help', 'guidance']):
+            validation['escalated_when_needed'] = True
+            
+        if any(word in all_thoughts for word in ['quick', 'efficient', 'minimize', 'delay', 'time']):
+            validation['minimized_delivery_delay'] = True
+            
+        return validation
+    
+    def run_scenario_2_6(self):
+        """Test Scenario 2.6: Major Traffic Obstruction"""
+        print("\n" + "="*60)
+        print("SCENARIO 2.6: MAJOR TRAFFIC OBSTRUCTION")
+        print("="*60)
+        
+        start_time = time.time()
+        
+        try:
+            problem = (
+                "Passenger is en route to important business meeting when a major multi-vehicle "
+                "accident completely blocks the highway ahead. Traffic is at a complete standstill "
+                "with estimated delays of 2+ hours. Passenger needs to arrive on time and is "
+                "requesting immediate alternative routing options."
+            )
+            
+            print(f"Problem: {problem}")
+            print("-" * 60)
+            
+            # Run agent
+            result = self.run_agent_with_problem(problem)
+            
+            execution_time = time.time() - start_time
+            
+            # Display chain of thought
+            self.display_chain_of_thought(result)
+            
+            # Display final plan
+            print(f"\nFINAL PLAN:")
+            print(f"  {result.get('plan', 'No plan generated')}")
+            
+            print(f"\nCOMPLETED: {result.get('done', False)}")
+            print("="*60)
+            
+            # Validate reasoning
+            validation = self.validate_scenario_2_6_reasoning(result)
+            
+            print(f"\nVALIDATION RESULTS:")
+            print("-" * 30)
+            for key, value in validation.items():
+                status = "✅" if value else "❌"
+                print(f"{status} {key}: {value}")
+            
+            success_rate = sum(validation.values()) / len(validation)
+            print(f"\n📊 SUCCESS RATE: {success_rate:.2%}")
+            print(f"⏱️  EXECUTION TIME: {execution_time:.2f}s")
+            
+            scenario_result = {
+                'scenario': 'Major Traffic Obstruction',
+                'problem': problem,
+                'result': result,
+                'validation': validation,
+                'success_rate': success_rate,
+                'execution_time': execution_time
+            }
+            
+            self.results['scenario_2_6'] = scenario_result
+            return scenario_result
+            
+        except Exception as e:
+            error_result = {
+                'scenario': 'Major Traffic Obstruction',
+                'problem': problem,
+                'error': str(e),
+                'success_rate': 0.0,
+                'execution_time': time.time() - start_time
+            }
+            self.results['scenario_2_6'] = error_result
+            print(f"\nERROR running scenario: {e}")
+            return error_result
+
+    def validate_scenario_2_6_reasoning(self, result: Dict[str, Any]) -> Dict[str, bool]:
+        """Validate that the agent properly handles major traffic obstruction scenario."""
+        validation = {
+            'assessed_traffic_situation': False,
+            'calculated_alternative_route': False,
+            'notified_all_parties': False,
+            'provided_updated_eta': False,
+            'handled_urgency_appropriately': False,
+            'comprehensive_traffic_plan': False
+        }
+        
+        steps = result.get('steps', [])
+        plan = result.get('plan', '').lower()
+        
+        # Check tools used
+        tools_used = [step.get('action', {}).get('tool_name') for step in steps if step.get('action')]
+        
+        # Check if key traffic management tools were used appropriately
+        if 'check_traffic' in tools_used:
+            validation['assessed_traffic_situation'] = True
+            
+        if 'calculate_alternative_route' in tools_used:
+            validation['calculated_alternative_route'] = True
+            
+        if 'notify_passenger_and_driver' in tools_used:
+            validation['notified_all_parties'] = True
+            
+        # Validate comprehensive traffic management plan
+        traffic_keywords = ['traffic', 'accident', 'obstruction', 'alternative', 'route', 'delay', 'eta']
+        if any(keyword in plan for keyword in traffic_keywords) and len(plan) > 100:
+            validation['comprehensive_traffic_plan'] = True
+            
+        # Additional validation through reasoning steps
+        all_thoughts = ' '.join([step.get('thought', '').lower() for step in steps if step.get('thought')])
+        
+        # Check for appropriate reasoning patterns
+        if any(word in all_thoughts for word in ['traffic', 'check', 'assess', 'situation', 'obstruction']):
+            validation['assessed_traffic_situation'] = True
+            
+        if any(word in all_thoughts for word in ['alternative', 'route', 'calculate', 'path', 'detour']):
+            validation['calculated_alternative_route'] = True
+            
+        if any(word in all_thoughts for word in ['notify', 'inform', 'communicate', 'passenger', 'driver']):
+            validation['notified_all_parties'] = True
+            
+        if any(word in all_thoughts for word in ['eta', 'time', 'arrival', 'delay', 'update']):
+            validation['provided_updated_eta'] = True
+            
+        if any(word in all_thoughts for word in ['urgent', 'business', 'meeting', 'important', 'priority']):
+            validation['handled_urgency_appropriately'] = True
+            
+        return validation
+    
+    def run_scenario_2_7(self):
+        """Test Scenario 2.7: Passenger Leaves Item in Vehicle"""
+        print("\n" + "="*60)
+        print("SCENARIO 2.7: PASSENGER LEAVES ITEM IN VEHICLE")
+        print("="*60)
+        
+        start_time = time.time()
+        
+        try:
+            problem = (
+                "A passenger completed their trip 30 minutes ago and now reports they left their "
+                "expensive smartphone in the backseat of the vehicle. They are requesting immediate "
+                "help to recover the item and are willing to coordinate with the driver to retrieve it. "
+                "Trip ID: TRIP_7845 was from downtown to airport."
+            )
+            
+            print(f"Problem: {problem}")
+            print("-" * 60)
+            
+            # Run agent
+            result = self.run_agent_with_problem(problem)
+            
+            execution_time = time.time() - start_time
+            
+            # Display chain of thought
+            self.display_chain_of_thought(result)
+            
+            # Display final plan
+            print(f"\nFINAL PLAN:")
+            print(f"  {result.get('plan', 'No plan generated')}")
+            
+            print(f"\nCOMPLETED: {result.get('done', False)}")
+            print("="*60)
+            
+            # Validate reasoning
+            validation = self.validate_scenario_2_7_reasoning(result)
+            
+            print(f"\nVALIDATION RESULTS:")
+            print("-" * 30)
+            for key, value in validation.items():
+                status = "✅" if value else "❌"
+                print(f"{status} {key}: {value}")
+            
+            success_rate = sum(validation.values()) / len(validation)
+            print(f"\n📊 SUCCESS RATE: {success_rate:.2%}")
+            print(f"⏱️  EXECUTION TIME: {execution_time:.2f}s")
+            
+            scenario_result = {
+                'scenario': 'Passenger Leaves Item in Vehicle',
+                'problem': problem,
+                'result': result,
+                'validation': validation,
+                'success_rate': success_rate,
+                'execution_time': execution_time
+            }
+            
+            self.results['scenario_2_7'] = scenario_result
+            return scenario_result
+            
+        except Exception as e:
+            error_result = {
+                'scenario': 'Passenger Leaves Item in Vehicle',
+                'problem': problem,
+                'error': str(e),
+                'success_rate': 0.0,
+                'execution_time': time.time() - start_time
+            }
+            self.results['scenario_2_7'] = error_result
+            print(f"\nERROR running scenario: {e}")
+            return error_result
+
+    def validate_scenario_2_7_reasoning(self, result: Dict[str, Any]) -> Dict[str, bool]:
+        """Validate that the agent properly handles lost item recovery scenario."""
+        validation = {
+            'located_trip_details': False,
+            'initiated_lost_found_process': False,
+            'facilitated_communication': False,
+            'provided_recovery_options': False,
+            'documented_case_properly': False,
+            'comprehensive_resolution_plan': False
+        }
+        
+        steps = result.get('steps', [])
+        plan = result.get('plan', '').lower()
+        
+        # Check tools used
+        tools_used = [step.get('action', {}).get('tool_name') for step in steps if step.get('action')]
+        
+        # Check if key lost and found tools were used appropriately
+        if 'locate_trip_path' in tools_used:
+            validation['located_trip_details'] = True
+            
+        if 'initiate_lost_and_found_flow' in tools_used:
+            validation['initiated_lost_found_process'] = True
+            
+        # Validate comprehensive recovery plan
+        recovery_keywords = ['lost', 'found', 'item', 'recover', 'contact', 'driver', 'passenger', 'coordinate']
+        if any(keyword in plan for keyword in recovery_keywords) and len(plan) > 100:
+            validation['comprehensive_resolution_plan'] = True
+            
+        # Additional validation through reasoning steps
+        all_thoughts = ' '.join([step.get('thought', '').lower() for step in steps if step.get('thought')])
+        
+        # Check for appropriate reasoning patterns
+        if any(word in all_thoughts for word in ['trip', 'path', 'locate', 'verify', 'details']):
+            validation['located_trip_details'] = True
+            
+        if any(word in all_thoughts for word in ['lost', 'found', 'case', 'initiate', 'process']):
+            validation['initiated_lost_found_process'] = True
+            
+        if any(word in all_thoughts for word in ['communication', 'contact', 'coordinate', 'facilitate', 'driver', 'passenger']):
+            validation['facilitated_communication'] = True
+            
+        if any(word in all_thoughts for word in ['recover', 'retrieve', 'options', 'alternatives', 'meetup', 'pickup']):
+            validation['provided_recovery_options'] = True
+            
+        if any(word in all_thoughts for word in ['document', 'record', 'case', 'details', 'reference']):
+            validation['documented_case_properly'] = True
+            
+        return validation
+    
+    def run_scenario_2_8(self):
+        """Test Scenario 2.8: Unsafe Road Conditions"""
+        print("\n" + "="*60)
+        print("SCENARIO 2.8: UNSAFE ROAD CONDITIONS")
+        print("="*60)
+        
+        start_time = time.time()
+        
+        try:
+            problem = (
+                "Driver is en route to pickup when they encounter a dangerous protest blocking the main road. "
+                "There are reports of violence and police activity. The driver's safety is at risk and passengers "
+                "are concerned about the delay. The driver needs immediate guidance for safe alternative routing."
+            )
+            
+            print(f"Problem: {problem}")
+            print("-" * 60)
+            
+            # Run agent
+            result = self.run_agent_with_problem(problem)
+            
+            execution_time = time.time() - start_time
+            
+            # Display chain of thought
+            self.display_chain_of_thought(result)
+            
+            # Display final plan
+            print(f"\nFINAL PLAN:")
+            print(f"  {result.get('plan', 'No plan generated')}")
+            
+            print(f"\nCOMPLETED: {result.get('done', False)}")
+            print("="*60)
+            
+            # Validate reasoning
+            validation = self.validate_scenario_2_8_reasoning(result)
+            
+            print(f"\nVALIDATION RESULTS:")
+            print("-" * 30)
+            for key, value in validation.items():
+                status = "✅" if value else "❌"
+                print(f"{status} {key}: {value}")
+            
+            success_rate = sum(validation.values()) / len(validation)
+            print(f"\n📊 SUCCESS RATE: {success_rate:.2%}")
+            print(f"⏱️  EXECUTION TIME: {execution_time:.2f}s")
+            
+            scenario_result = {
+                'scenario': 'Unsafe Road Conditions',
+                'problem': problem,
+                'result': result,
+                'validation': validation,
+                'success_rate': success_rate,
+                'execution_time': execution_time
+            }
+            
+            self.results['scenario_2_8'] = scenario_result
+            return scenario_result
+            
+        except Exception as e:
+            error_result = {
+                'scenario': 'Unsafe Road Conditions',
+                'problem': problem,
+                'error': str(e),
+                'success_rate': 0.0,
+                'execution_time': time.time() - start_time
+            }
+            self.results['scenario_2_8'] = error_result
+            print(f"\nERROR running scenario: {e}")
+            return error_result
+
+    def validate_scenario_2_8_reasoning(self, result: Dict[str, Any]) -> Dict[str, bool]:
+        """Validate that the agent properly handles unsafe road conditions scenario."""
+        validation = {
+            'prioritized_safety': False,
+            'rerouted_to_safe_location': False,
+            'notified_all_parties': False,
+            'escalated_to_support': False,
+            'provided_clear_communication': False,
+            'comprehensive_safety_plan': False
+        }
+        
+        steps = result.get('steps', [])
+        plan = result.get('plan', '').lower()
+        
+        # Check tools used
+        tools_used = [step.get('action', {}).get('tool_name') for step in steps if step.get('action')]
+        
+        # Check if key safety tools were used appropriately
+        if 'reroute_driver_to_safe_location' in tools_used:
+            validation['rerouted_to_safe_location'] = True
+            
+        if 'notify_passenger_and_driver' in tools_used:
+            validation['notified_all_parties'] = True
+            
+        if 'contact_support_live' in tools_used:
+            validation['escalated_to_support'] = True
+            
+        # Validate comprehensive safety plan
+        safety_keywords = ['safety', 'safe', 'dangerous', 'hazard', 'reroute', 'alternative', 'incident']
+        if any(keyword in plan for keyword in safety_keywords) and len(plan) > 100:
+            validation['comprehensive_safety_plan'] = True
+            
+        # Additional validation through reasoning steps
+        all_thoughts = ' '.join([step.get('thought', '').lower() for step in steps if step.get('thought')])
+        
+        # Check for safety-first reasoning patterns
+        if any(word in all_thoughts for word in ['safety', 'dangerous', 'safe', 'hazard', 'risk']):
+            validation['prioritized_safety'] = True
+            
+        if any(word in all_thoughts for word in ['notify', 'inform', 'communicate', 'update', 'passenger', 'driver']):
+            validation['provided_clear_communication'] = True
+            
+        return validation
+    
+    def run_scenario_2_9(self):
+        """Test Scenario 2.9: Unresponsive Driver"""
+        print("\n" + "="*60)
+        print("SCENARIO 2.9: UNRESPONSIVE DRIVER")
+        print("="*60)
+        
+        start_time = time.time()
+        
+        try:
+            problem = (
+                "Driver D123 has accepted a booking for order ORD789 from customer C456, but has been "
+                "idle at pickup location for over 10 minutes and is not responding to contact attempts. "
+                "Customer is expecting their order and starting to call support about the delay."
+            )
+            
+            print(f"Problem: {problem}")
+            print("-" * 60)
+            
+            # Run agent
+            result = self.run_agent_with_problem(problem)
+            
+            execution_time = time.time() - start_time
+            
+            # Display chain of thought
+            self.display_chain_of_thought(result)
+            
+            # Display final plan
+            print(f"\nFINAL PLAN:")
+            print(f"  {result.get('plan', 'No plan generated')}")
+            
+            print(f"\nCOMPLETED: {result.get('done', False)}")
+            print("="*60)
+            
+            # Validate reasoning
+            validation = self.validate_scenario_2_9_reasoning(result)
+            
+            print(f"\nVALIDATION RESULTS:")
+            print("-" * 30)
+            for key, value in validation.items():
+                status = "✅" if value else "❌"
+                print(f"{status} {key}: {value}")
+            
+            success_rate = sum(validation.values()) / len(validation)
+            print(f"\n📊 SUCCESS RATE: {success_rate:.2%}")
+            print(f"⏱️  EXECUTION TIME: {execution_time:.2f}s")
+            
+            scenario_result = {
+                'scenario': 'Unresponsive Driver',
+                'problem': problem,
+                'result': result,
+                'validation': validation,
+                'success_rate': success_rate,
+                'execution_time': execution_time
+            }
+            
+            self.results['scenario_2_9'] = scenario_result
+            return scenario_result
+            
+        except Exception as e:
+            error_result = {
+                'scenario': 'Unresponsive Driver',
+                'problem': problem,
+                'error': str(e),
+                'success_rate': 0.0,
+                'execution_time': time.time() - start_time
+            }
+            self.results['scenario_2_9'] = error_result
+            print(f"\nERROR running scenario: {e}")
+            return error_result
+
+    def validate_scenario_2_9_reasoning(self, result: Dict[str, Any]) -> Dict[str, bool]:
+        """Validate that the agent properly handles unresponsive driver scenario."""
+        validation = {
+            'checked_driver_status': False,
+            'notified_customer': False,
+            'attempted_driver_replacement': False,
+            'considered_booking_cancellation': False,
+            'escalated_if_needed': False,
+            'provided_comprehensive_plan': False
+        }
+        
+        steps = result.get('steps', [])
+        plan = result.get('plan', '').lower()
+        
+        # Check tools used
+        tools_used = [step.get('action', {}).get('tool_name') for step in steps if step.get('action')]
+        
+        # Check if key tools were used appropriately
+        if 'get_driver_status' in tools_used:
+            validation['checked_driver_status'] = True
+            
+        if 'notify_customer' in tools_used:
+            validation['notified_customer'] = True
+            
+        if 'find_replacement_driver' in tools_used:
+            validation['attempted_driver_replacement'] = True
+            
+        if 'cancel_booking' in tools_used:
+            validation['considered_booking_cancellation'] = True
+            
+        if 'contact_support_live' in tools_used:
+            validation['escalated_if_needed'] = True
+            
+        # Validate comprehensive plan
+        plan_keywords = ['driver', 'unresponsive', 'replacement', 'customer', 'booking']
+        if any(keyword in plan for keyword in plan_keywords) and len(plan) > 100:
+            validation['provided_comprehensive_plan'] = True
+            
+        # Additional validation through reasoning steps
+        all_thoughts = ' '.join([step.get('thought', '').lower() for step in steps if step.get('thought')])
+        
+        # Check for appropriate reasoning patterns
+        if any(word in all_thoughts for word in ['status', 'driver', 'responsive', 'idle']):
+            validation['checked_driver_status'] = True
+            
+        if any(word in all_thoughts for word in ['customer', 'notify', 'inform', 'update']):
+            validation['notified_customer'] = True
+            
+        return validation
+    
     def run_all_scenarios(self):
         """Run all available scenarios."""
         print("Starting Synapse Agent Scenario Testing")
@@ -759,6 +1367,21 @@ class ScenarioTester:
         
         # Run Scenario 2.4
         self.run_scenario_2_4()
+        
+        # Run Scenario 2.5
+        self.run_scenario_2_5()
+        
+        # Run Scenario 2.6
+        self.run_scenario_2_6()
+        
+        # Run Scenario 2.7
+        self.run_scenario_2_7()
+        
+        # Run Scenario 2.8
+        self.run_scenario_2_8()
+        
+        # Run Scenario 2.9
+        self.run_scenario_2_9()
         
         # Summary
         print(f"\n{'=' * 50}")

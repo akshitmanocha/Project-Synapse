@@ -410,6 +410,74 @@ def _tool_registry() -> Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]]:
 			message=str(p.get("message", ""))
 		)
 
+	# Scenario 2.9: Unresponsive Driver Tools
+	def adapt_get_driver_status(p: Dict[str, Any]) -> Dict[str, Any]:
+		return sim_tools.get_driver_status(driver_id=str(p.get("driver_id", "")))
+
+	def adapt_cancel_booking(p: Dict[str, Any]) -> Dict[str, Any]:
+		return sim_tools.cancel_booking(
+			booking_id=str(p.get("booking_id", "")),
+			reason=str(p.get("reason", ""))
+		)
+
+	def adapt_find_replacement_driver(p: Dict[str, Any]) -> Dict[str, Any]:
+		location = p.get("location", {})
+		if not isinstance(location, dict):
+			location = {}
+		return sim_tools.find_replacement_driver(
+			booking_id=str(p.get("booking_id", "")),
+			location=location
+		)
+
+	# Scenario 2.8: Unsafe Road Conditions Tools
+	def adapt_reroute_driver_to_safe_location(p: Dict[str, Any]) -> Dict[str, Any]:
+		location = p.get("location", {})
+		if not isinstance(location, dict):
+			location = {}
+		return sim_tools.reroute_driver_to_safe_location(
+			driver_id=str(p.get("driver_id", "")),
+			location=location
+		)
+
+	def adapt_notify_passenger_and_driver(p: Dict[str, Any]) -> Dict[str, Any]:
+		return sim_tools.notify_passenger_and_driver(
+			trip_id=str(p.get("trip_id", "")),
+			message=str(p.get("message", ""))
+		)
+
+	# Scenario 2.7: Lost and Found Tools
+	def adapt_locate_trip_path(p: Dict[str, Any]) -> Dict[str, Any]:
+		return sim_tools.locate_trip_path(trip_id=str(p.get("trip_id", "")))
+
+	def adapt_initiate_lost_and_found_flow(p: Dict[str, Any]) -> Dict[str, Any]:
+		details = p.get("details", {})
+		if not isinstance(details, dict):
+			details = {"description": str(details)} if details else {}
+		return sim_tools.initiate_lost_and_found_flow(
+			trip_id=str(p.get("trip_id", "")),
+			details=details
+		)
+
+	# Scenario 2.6: Major Traffic Obstruction Tools
+	def adapt_calculate_alternative_route(p: Dict[str, Any]) -> Dict[str, Any]:
+		constraints = p.get("constraints", {})
+		if not isinstance(constraints, dict):
+			constraints = {}
+		return sim_tools.calculate_alternative_route(
+			route_id=str(p.get("route_id", "")),
+			constraints=constraints
+		)
+
+	# Scenario 2.5: Address Verification Tools
+	def adapt_verify_address_with_customer(p: Dict[str, Any]) -> Dict[str, Any]:
+		provided_address = p.get("provided_address", {})
+		if not isinstance(provided_address, dict):
+			provided_address = {"address": str(provided_address)} if provided_address else {}
+		return sim_tools.verify_address_with_customer(
+			customer_id=str(p.get("customer_id", "")),
+			provided_address=provided_address
+		)
+
 	return {
 		"check_traffic": adapt_check_traffic,
 		"get_merchant_status": adapt_get_merchant_status,
@@ -430,6 +498,20 @@ def _tool_registry() -> Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]]:
 		"find_nearby_locker": adapt_find_nearby_locker,
 		"schedule_redelivery": adapt_schedule_redelivery,
 		"contact_sender": adapt_contact_sender,
+		# Scenario 2.9: Unresponsive Driver Tools
+		"get_driver_status": adapt_get_driver_status,
+		"cancel_booking": adapt_cancel_booking,
+		"find_replacement_driver": adapt_find_replacement_driver,
+		# Scenario 2.5: Address Verification Tools
+		"verify_address_with_customer": adapt_verify_address_with_customer,
+		# Scenario 2.6: Major Traffic Obstruction Tools
+		"calculate_alternative_route": adapt_calculate_alternative_route,
+		# Scenario 2.7: Lost and Found Tools
+		"locate_trip_path": adapt_locate_trip_path,
+		"initiate_lost_and_found_flow": adapt_initiate_lost_and_found_flow,
+		# Scenario 2.8: Unsafe Road Conditions Tools
+		"reroute_driver_to_safe_location": adapt_reroute_driver_to_safe_location,
+		"notify_passenger_and_driver": adapt_notify_passenger_and_driver,
 		# Special pseudo-tool handled in tool_exec_node: "finish"
 	}
 
@@ -701,6 +783,59 @@ def reflection_node(state: AgentState) -> AgentState:
 			needs_reflection = True
 			reflection_reason = "Refund requires approval - try partial refund instead"
 			alternative_approach = "issue_partial_refund"
+		# Unresponsive driver scenarios
+		elif observation.get("state") == "idle" and tool_name == "get_driver_status":
+			needs_reflection = True
+			reflection_reason = "Driver is idle and unresponsive - need to notify customer and find replacement"
+			alternative_approach = "notify_customer"
+		elif observation.get("driver_found") is False and tool_name == "find_replacement_driver":
+			needs_reflection = True
+			reflection_reason = "No replacement driver available - cancel booking and issue refund"
+			alternative_approach = "cancel_booking"
+		elif observation.get("cancelled") is False and tool_name == "cancel_booking":
+			needs_reflection = True
+			reflection_reason = "Booking cancellation failed - escalate to support"
+			alternative_approach = "contact_support_live"
+		# Unsafe road conditions scenarios
+		elif observation.get("incident_level") in ["severe", "hazardous"] and tool_name == "check_traffic":
+			needs_reflection = True
+			reflection_reason = "Hazardous road conditions detected - prioritize safety with immediate rerouting"
+			alternative_approach = "reroute_driver_to_safe_location"
+		elif observation.get("rerouted") is False and tool_name == "reroute_driver_to_safe_location":
+			needs_reflection = True
+			reflection_reason = "Safe rerouting failed - notify all parties and escalate"
+			alternative_approach = "notify_passenger_and_driver"
+		elif observation.get("passenger_ack") is False or observation.get("driver_ack") is False and tool_name == "notify_passenger_and_driver":
+			needs_reflection = True
+			reflection_reason = "Communication failed during safety incident - escalate immediately"
+			alternative_approach = "contact_support_live"
+		# Lost and found scenarios
+		elif observation.get("trip_found") is False and tool_name == "locate_trip_path":
+			needs_reflection = True
+			reflection_reason = "Trip path could not be located - initiate lost and found process anyway"
+			alternative_approach = "initiate_lost_and_found_flow"
+		elif observation.get("case_initiated") is False and tool_name == "initiate_lost_and_found_flow":
+			needs_reflection = True
+			reflection_reason = "Lost and found case failed to initiate - escalate to support"
+			alternative_approach = "contact_support_live"
+		# Major traffic obstruction scenarios
+		elif observation.get("incident_level") in ["major", "severe"] and tool_name == "check_traffic":
+			needs_reflection = True
+			reflection_reason = "Major traffic obstruction detected - need immediate alternative routing"
+			alternative_approach = "calculate_alternative_route"
+		elif observation.get("alternative_found") is False and tool_name == "calculate_alternative_route":
+			needs_reflection = True
+			reflection_reason = "No alternative route available - notify all parties and consider trip cancellation"
+			alternative_approach = "notify_passenger_and_driver"
+		# Address verification scenarios
+		elif observation.get("address_confirmed") is False and tool_name == "verify_address_with_customer":
+			needs_reflection = True
+			reflection_reason = "Customer could not confirm correct address - escalate to sender for guidance"
+			alternative_approach = "contact_sender"
+		elif observation.get("corrected_address") and tool_name == "verify_address_with_customer":
+			needs_reflection = True
+			reflection_reason = "Customer provided corrected address - need to reroute driver immediately"
+			alternative_approach = "re_route_driver"
 	
 	if needs_reflection:
 		# Add reflection step to provide guidance for next reasoning cycle

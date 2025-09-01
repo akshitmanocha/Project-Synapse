@@ -116,6 +116,12 @@ When you receive **⚠️ REFLECTION GUIDANCE**, it means a previous tool execut
 - **Parameters**: route_id should be descriptive (e.g., "to_restaurant_xyz", "from_merchant_a_to_customer_b")
 - **Output**: incident_level, blocked status, delay_mins, details
 
+**calculate_alternative_route(route_id: str, constraints: dict)**
+- **Purpose**: Find alternative routes when primary path is blocked or severely delayed
+- **Strategic Use**: Use immediately after detecting major traffic incidents or obstructions
+- **Parameters**: route_id and optional constraints (avoid highways, fastest/shortest preference)
+- **Output**: Alternative route options with ETA comparisons and turn-by-turn directions
+
 ### Merchant Operations Tools  
 **get_merchant_status(merchant_id: str)**
 - **Purpose**: Check restaurant operational status and preparation times
@@ -141,6 +147,52 @@ When you receive **⚠️ REFLECTION GUIDANCE**, it means a previous tool execut
 - **Strategic Use**: Use when significant delays occur or when drivers would otherwise be idle
 - **Parameters**: driver_id and detailed new_route object with description
 - **Output**: Confirmation of new assignment
+
+**cancel_booking(booking_id: str, reason: str)**
+- **Purpose**: Cancel a booking when driver issues or other problems arise
+- **Strategic Use**: Use when driver is unresponsive or unable to complete delivery
+- **Parameters**: booking_id and detailed reason for cancellation
+- **Output**: Cancellation confirmation and refund processing status
+
+**find_replacement_driver(booking_id: str, location: dict)**
+- **Purpose**: Find and assign replacement driver for cancelled bookings
+- **Strategic Use**: Use after driver becomes unresponsive to maintain service continuity
+- **Parameters**: booking_id and current location coordinates
+- **Output**: New driver assignment details and ETA
+
+### Safety & Security Tools
+**reroute_driver_to_safe_location(driver_id: str, location: dict)**
+- **Purpose**: Immediately redirect driver away from dangerous conditions
+- **Strategic Use**: Use when driver encounters protests, hazards, severe weather, or violence
+- **Parameters**: driver_id and safe_location coordinates with description
+- **Output**: Rerouting confirmation and new route details
+- **Priority**: ALWAYS prioritize safety over delivery speed
+
+**notify_passenger_and_driver(trip_id: str, message: str)**
+- **Purpose**: Send simultaneous updates to both passenger and driver during incidents
+- **Strategic Use**: Use during safety events, route changes, or emergency situations
+- **Parameters**: trip_id and clear safety-focused message
+- **Output**: Acknowledgment status from both parties
+
+### Lost & Found Tools
+**locate_trip_path(trip_id: str)**
+- **Purpose**: Verify trip details and path for lost item investigations
+- **Strategic Use**: Use first to validate trip information and locate driver for item recovery
+- **Parameters**: trip_id from passenger's completed trip
+- **Output**: Trip path, driver details, and location history for coordination
+
+**initiate_lost_and_found_flow(trip_id: str, details: dict)**
+- **Purpose**: Create official lost and found case with systematic recovery process
+- **Strategic Use**: Use after trip verification to document case and facilitate recovery
+- **Parameters**: trip_id and detailed description of lost item and circumstances
+- **Output**: Case ID, next steps, and driver contact coordination for item retrieval
+
+### Address Verification Tools
+**verify_address_with_customer(customer_id: str, provided_address: dict)**
+- **Purpose**: Confirm delivery address details when driver cannot locate recipient
+- **Strategic Use**: Use when address appears incorrect, incomplete, or missing unit numbers
+- **Parameters**: customer_id and current provided_address details for verification
+- **Output**: Address confirmation status, corrected address details, and additional location info
 
 ### Customer Communication Tools
 **notify_customer(customer_id: str, message: str, channel: str)**

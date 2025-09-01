@@ -229,6 +229,11 @@ python main.py --no-banner "Order dispute at customer location"
 | **2.2** | Item out of stock, needs customer preference handling | Multi-path |
 | **2.3** | Dispute at customer location during delivery | Crisis management |
 | **2.4** | Recipient unavailable for valuable package delivery | Systematic escalation |
+| **2.5** | Incorrect or incomplete address (missing unit number) | Address verification |
+| **2.6** | Major traffic obstruction (accident/road closure) | Traffic management |
+| **2.7** | Passenger leaves personal item in vehicle after trip | Lost and found |
+| **2.8** | Driver encounters unsafe road conditions (protest/hazard) | Safety protocols |
+| **2.9** | Driver unresponsive after accepting booking | Driver replacement |
 | **traffic** | Driver stuck in heavy traffic delay | Route optimization |
 | **merchant** | Merchant equipment breakdown | Alternative sourcing |
 | **weather** | Severe weather preventing delivery | Safety-first approach |
@@ -299,7 +304,187 @@ $ python main.py --scenario 2.4
 ✅ Agent successfully resolved the logistics problem!
 ```
 
-**Example 2: Traffic Delay with Verbose Output**
+**Example 2: Unresponsive Driver (Scenario 2.9)**
+```bash
+$ python main.py --scenario 2.9
+
+🎯 Using scenario '2.9': Driver has accepted a booking but is not moving or responding to contact attempts for over 10 minutes
+
+======================================================================
+🧠 AGENT CHAIN OF THOUGHT  
+======================================================================
+
+┌─ STEP 1: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: Driver D123 has been idle for 10+ minutes without response. 
+│            I need to check their current status first.
+│ 🔧 ACTION: Tool Used: get_driver_status
+│ 👁️ OBSERVATION: Driver Status: idle, Location: [1.352, 103.821]
+└─────────────────────────────────────────────────────────────────
+
+┌─ STEP 2: 🤔 REFLECTION & REASONING ────────────────────
+│ 💭 THOUGHT: Driver is confirmed idle and unresponsive. Customer is 
+│            waiting and may escalate. Need to notify customer and 
+│            find replacement immediately.
+│ 🔧 ACTION: Tool Used: notify_customer
+│ 👁️ OBSERVATION: Customer notified about delay and replacement search
+└─────────────────────────────────────────────────────────────────
+
+┌─ STEP 3: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: Now searching for replacement driver to minimize delay.
+│ 🔧 ACTION: Tool Used: find_replacement_driver  
+│ 👁️ OBSERVATION: Replacement found! ETA: 8 minutes
+└─────────────────────────────────────────────────────────────────
+
+🎯 FINAL RESOLUTION:
+Customer notified, replacement driver assigned, original booking transferred. 
+Incident logged for driver performance review.
+
+✅ Agent successfully resolved the unresponsive driver situation!
+```
+
+**Example 3: Unsafe Road Conditions (Scenario 2.8)**
+```bash
+$ python main.py --scenario 2.8
+
+🎯 Using scenario '2.8': Driver encounters unsafe road conditions including protest, road hazard, or severe weather requiring immediate rerouting
+
+======================================================================
+🧠 AGENT CHAIN OF THOUGHT  
+======================================================================
+
+┌─ STEP 1: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: Safety is the top priority. Driver reports dangerous protest 
+│            with violence ahead. Must immediately reroute to safe location.
+│ 🔧 ACTION: Tool Used: reroute_driver_to_safe_location
+│ 👁️ OBSERVATION: Driver successfully rerouted to alternate route +15 min ETA
+└─────────────────────────────────────────────────────────────────
+
+┌─ STEP 2: 🤔 REFLECTION & REASONING ────────────────────
+│ 💭 THOUGHT: Driver is now safe but passengers need immediate notification 
+│            about the delay and safety measures taken.
+│ 🔧 ACTION: Tool Used: notify_passenger_and_driver
+│ 👁️ OBSERVATION: Both parties notified and acknowledged safety protocol
+└─────────────────────────────────────────────────────────────────
+
+┌─ STEP 3: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: This is a significant safety incident that requires operations 
+│            team awareness for other drivers in the area.
+│ 🔧 ACTION: Tool Used: contact_support_live  
+│ 👁️ OBSERVATION: Support alerted, area-wide safety advisory issued
+└─────────────────────────────────────────────────────────────────
+
+🎯 FINAL RESOLUTION:
+Driver safely rerouted away from dangerous protest area. All parties informed 
+of safety measures and delay. Operations team alerted to implement area-wide 
+safety protocols for other drivers.
+
+✅ Agent prioritized safety and handled the hazardous situation professionally!
+```
+
+**Example 4: Lost Item Recovery (Scenario 2.7)**
+```bash
+$ python main.py --scenario 2.7
+
+🎯 Using scenario '2.7': Passenger reports losing a personal item in the vehicle after trip completion
+
+======================================================================
+🧠 AGENT CHAIN OF THOUGHT  
+======================================================================
+
+┌─ STEP 1: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: Passenger left smartphone in vehicle after trip. First I need 
+│            to verify trip details to help locate the driver and coordinate recovery.
+│ 🔧 ACTION: Tool Used: locate_trip_path
+│ 👁️ OBSERVATION: Trip verified: TRIP_7845, Downtown→Airport, completed 30min ago
+└─────────────────────────────────────────────────────────────────
+
+┌─ STEP 2: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: Trip confirmed. Now I'll initiate the official lost and found 
+│            process to create a case and facilitate driver-passenger coordination.
+│ 🔧 ACTION: Tool Used: initiate_lost_and_found_flow
+│ 👁️ OBSERVATION: Case LF_1a2b3c4d created. Driver contacted, recovery arranged
+└─────────────────────────────────────────────────────────────────
+
+🎯 FINAL RESOLUTION:
+Lost item case established with verified trip details. Driver has been contacted 
+and confirmed smartphone is in vehicle. Recovery meetup arranged at convenient 
+location within 2 hours. Case documented for tracking and follow-up.
+
+✅ Agent successfully facilitated lost item recovery coordination!
+```
+
+**Example 5: Major Traffic Obstruction (Scenario 2.6)**
+```bash
+$ python main.py --scenario 2.6
+
+🎯 Using scenario '2.6': Passenger's trip is impacted by sudden severe traffic event like major accident or road closure
+
+======================================================================
+🧠 AGENT CHAIN OF THOUGHT  
+======================================================================
+
+┌─ STEP 1: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: Major highway accident with 2+ hour delays. Passenger has 
+│            urgent business meeting. Need to assess traffic and find alternatives.
+│ 🔧 ACTION: Tool Used: check_traffic
+│ 👁️ OBSERVATION: Major incident confirmed. Complete blockage, 2hr+ delays
+└─────────────────────────────────────────────────────────────────
+
+┌─ STEP 2: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: Traffic situation critical. Must calculate alternative route 
+│            immediately to avoid missing important meeting.
+│ 🔧 ACTION: Tool Used: calculate_alternative_route
+│ 👁️ OBSERVATION: Alternative route found via downtown. +25 min but avoids blockage
+└─────────────────────────────────────────────────────────────────
+
+┌─ STEP 3: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: Alternative route secured. Must notify passenger and driver 
+│            immediately with new route and updated ETA.
+│ 🔧 ACTION: Tool Used: notify_passenger_and_driver  
+│ 👁️ OBSERVATION: Both parties notified. New route accepted, ETA updated
+└─────────────────────────────────────────────────────────────────
+
+🎯 FINAL RESOLUTION:
+Major traffic obstruction bypassed with alternative routing. Passenger and driver 
+informed of new route adding only 25 minutes vs 2+ hour highway delay. Meeting 
+arrival time preserved through proactive traffic management.
+
+✅ Agent successfully navigated major traffic crisis with minimal impact!
+```
+
+**Example 6: Address Verification (Scenario 2.5)**
+```bash
+$ python main.py --scenario 2.5
+
+🎯 Using scenario '2.5': Driver cannot locate delivery address due to incorrect or incomplete information like missing unit number
+
+======================================================================
+🧠 AGENT CHAIN OF THOUGHT  
+======================================================================
+
+┌─ STEP 1: 🛠️ ACTION & EXECUTION ────────────────────────
+│ 💭 THOUGHT: Driver can't find the recipient at 1234 Main Street - appears 
+│            to be apartment complex but no unit number provided. Need customer verification.
+│ 🔧 ACTION: Tool Used: verify_address_with_customer
+│ 👁️ OBSERVATION: Customer confirmed - correct address is 1234 Main St, Apt 5B
+└─────────────────────────────────────────────────────────────────
+
+┌─ STEP 2: 🤔 REFLECTION & REASONING ────────────────────
+│ 💭 THOUGHT: Customer provided corrected address with unit number. Need to 
+│            immediately reroute driver to specific apartment 5B.
+│ 🔧 ACTION: Tool Used: re_route_driver
+│ 👁️ OBSERVATION: Driver successfully redirected to Building 2, Apartment 5B
+└─────────────────────────────────────────────────────────────────
+
+🎯 FINAL RESOLUTION:
+Address verification completed with customer providing missing unit number. 
+Driver successfully rerouted to correct apartment location. Delivery completed 
+with minimal additional delay through proactive address confirmation.
+
+✅ Agent resolved address issue efficiently with customer collaboration!
+```
+
+**Example 7: Traffic Delay with Verbose Output**
 ```bash
 $ synapse-agent --scenario traffic --verbose
 

@@ -231,6 +231,11 @@ def get_predefined_scenarios() -> Dict[str, str]:
         "2.2": "Item is out of stock and needs to be replaced with customer's preferred alternative",
         "2.3": "Driver is at the customer's location but there's a dispute about the order at the door",
         "2.4": "A driver is at the customer's location, but the recipient is not available to receive a valuable package",
+        "2.5": "Driver cannot locate delivery address due to incorrect or incomplete information like missing unit number",
+        "2.6": "Passenger's trip is impacted by sudden severe traffic event like major accident or road closure",
+        "2.7": "Passenger reports losing a personal item in the vehicle after trip completion",
+        "2.8": "Driver encounters unsafe road conditions including protest, road hazard, or severe weather requiring immediate rerouting",
+        "2.9": "Driver has accepted a booking but is not moving or responding to contact attempts for over 10 minutes",
         "traffic": "Driver stuck in heavy traffic, 45-minute delay expected for customer order",
         "merchant": "Merchant's kitchen equipment broke down, cannot prepare the order",
         "weather": "Severe weather conditions preventing safe delivery completion"
