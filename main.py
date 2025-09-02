@@ -26,6 +26,8 @@ try:
     from synapse import run_agent
     from synapse.agent import AgentState
     from synapse.tools import debug_tools
+    from synapse.core.performance_tracker import PerformanceTracker
+    from synapse.core.executive_display import ExecutiveDisplay
 except ImportError as e:
     print(f"❌ Import Error: {e}")
     print("Please ensure you're in the project root directory and have installed the package:")
@@ -287,6 +289,11 @@ Examples:
         help="Only show final resolution plan"
     )
     parser.add_argument(
+        "--executive", "-e",
+        action="store_true",
+        help="Executive mode: Show real-time performance metrics and visualizations"
+    )
+    parser.add_argument(
         "--no-banner",
         action="store_true",
         help="Don't show the banner"
@@ -348,24 +355,77 @@ Examples:
         # Record start time
         start_time = datetime.now()
         
+        # Initialize executive display if needed
+        display = None
+        if args.executive:
+            display = ExecutiveDisplay()
+            display.start()
+        
         if not args.quiet:
             print("🚀 Starting Synapse Agent...")
             print(f"⏰ Time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
             print()
         
-        # Run the agent
-        result = run_agent(problem)
+        # Determine scenario type for tracking
+        scenario_type = args.scenario if args.scenario else "custom"
+        
+        # Run the agent with performance tracking if in executive mode
+        result = run_agent(problem, scenario_type=scenario_type, enable_performance_tracking=args.executive)
         
         # Record end time
         end_time = datetime.now()
         duration = end_time - start_time
         
-        if not args.quiet:
+        # Stop executive display and show final metrics
+        if args.executive and display:
+            display.stop()
+            
+            # Get final performance metrics
+            tracker = PerformanceTracker()
+            if tracker.query_history:
+                last_query = tracker.query_history[-1]
+                
+                # Show executive summary
+                print("\n" + "=" * 70)
+                print("📊 EXECUTIVE PERFORMANCE SUMMARY")
+                print("=" * 70)
+                
+                print(f"\n📈 Query Metrics:")
+                print(f"  • Total Duration: {duration.total_seconds():.2f} seconds")
+                print(f"  • Steps Executed: {last_query.total_steps}")
+                print(f"  • Tools Used: {len(last_query.tool_executions)}")
+                print(f"  • Reflections: {last_query.reflection_steps}")
+                
+                print(f"\n⚡ Efficiency Analysis:")
+                print(f"  • Parallel Executions: {last_query.parallel_executions}")
+                print(f"  • Time Saved: {last_query.time_saved_by_parallelization:.2f}s")
+                print(f"  • Complexity Score: {last_query.get_complexity_score()}/10")
+                print(f"  • First-Try Success: {'Yes ✅' if last_query.first_try_success else 'No (Reflection Used)'}")
+                
+                print(f"\n💰 Cost Analysis:")
+                print(f"  • Total Tokens: {last_query.total_input_tokens + last_query.total_output_tokens:,}")
+                print(f"  • Estimated Cost: ${last_query.estimated_cost:.4f}")
+                print(f"  • LLM Calls: {last_query.llm_calls}")
+                print(f"  • Avg Response Time: {last_query.avg_llm_response_time:.2f}s")
+                
+                # Tool performance breakdown
+                if last_query.tool_executions:
+                    print(f"\n🔧 Tool Execution Breakdown:")
+                    for tool in last_query.tool_executions[:5]:  # Show top 5
+                        status_icon = "✅" if tool.status == "success" else "❌"
+                        print(f"  {status_icon} {tool.tool_name}: {tool.duration:.2f}s")
+                
+                # Export metrics if requested
+                metrics_file = f"metrics_{last_query.query_id}.json"
+                tracker.export_metrics(metrics_file)
+                print(f"\n📁 Detailed metrics exported to: {metrics_file}")
+        
+        elif not args.quiet:
             print(f"\n⏰ Execution completed in {duration.total_seconds():.2f} seconds")
             print()
         
-        # Display results based on verbosity
-        if not args.quiet:
+        # Display results based on verbosity (skip in executive mode as it has its own display)
+        if not args.quiet and not args.executive:
             print_chain_of_thought(result.get("steps", []), verbose=args.verbose)
         
         print_final_plan(result)
@@ -377,9 +437,13 @@ Examples:
             print("\n⚠️  Agent completed processing but may require additional steps.")
         
     except KeyboardInterrupt:
+        if display:
+            display.stop()
         print("\n\n⏸️  Execution interrupted by user.")
         sys.exit(1)
     except Exception as e:
+        if display:
+            display.stop()
         print(f"\n❌ Error during execution: {e}")
         if args.verbose:
             import traceback

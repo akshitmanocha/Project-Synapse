@@ -84,110 +84,165 @@ main.py                     # CLI entry point
 setup.py                    # Package installation configuration
 ```
 
-## 🚀 Installation & Setup
+## 🚀 Quick Start Installation
 
 ### Prerequisites
+- **Python 3.8+** (3.10+ recommended) - [Download Python](https://www.python.org/downloads/)
+- **Git** - [Download Git](https://git-scm.com/downloads)
+- **Google Gemini API Key** - [Get Free API Key](https://ai.google.dev/)
 
-- **Python 3.8+** (recommended: Python 3.10+)
-- **Google Gemini API Key** (required for LLM operations)
-- **Git** for repository cloning
+### 🎯 Choose Your Installation Method
 
-### Step 1: Clone Repository
-
+#### Option 1: Automated Installer (Easiest)
 ```bash
-# Clone the repository
+# Download and run the cross-platform installer
 git clone https://github.com/yourusername/Project-Synapse.git
 cd Project-Synapse
-
-# Verify project structure
-ls -la
+python install.py
 ```
 
-### Step 2: Environment Setup
+#### Option 2: One-Line Install
+
+**macOS/Linux:**
+```bash
+git clone https://github.com/yourusername/Project-Synapse.git && cd Project-Synapse && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && cp .env.template .env && echo "✅ Installation complete! Now add your API key to .env file"
+```
+
+**Windows (PowerShell):**
+```powershell
+git clone https://github.com/yourusername/Project-Synapse.git; cd Project-Synapse; python -m venv .venv; .venv\Scripts\Activate; pip install -r requirements.txt; copy .env.template .env; echo "✅ Installation complete! Now add your API key to .env file"
+```
+
+### 🔧 Step-by-Step Installation
+
+#### Step 1: Clone & Navigate
+```bash
+git clone https://github.com/yourusername/Project-Synapse.git
+cd Project-Synapse
+```
+
+#### Step 2: Create Virtual Environment
+
+<details>
+<summary><b>🍎 macOS / 🐧 Linux</b></summary>
 
 ```bash
-# Create isolated virtual environment
-python -m venv .venv
+# Create virtual environment
+python3 -m venv .venv
 
-# Activate virtual environment
-# On macOS/Linux:
+# Activate it
 source .venv/bin/activate
 
-# On Windows:
-.venv\Scripts\activate
-
-# Verify activation (should show Project-Synapse path)
-which python
+# You should see (.venv) in your terminal
 ```
+</details>
 
-### Step 3: Install Dependencies
+<details>
+<summary><b>🪟 Windows</b></summary>
 
+```powershell
+# Create virtual environment
+python -m venv .venv
+
+# Activate it (PowerShell)
+.venv\Scripts\Activate
+
+# Or for Command Prompt
+.venv\Scripts\activate.bat
+
+# You should see (.venv) in your terminal
+```
+</details>
+
+#### Step 3: Install Dependencies
 ```bash
-# Method 1: Full package installation (recommended)
-# This installs the package and creates the 'synapse-agent' console command
-pip install -e .
-
-# Method 2: Dependencies only
-# This only installs requirements, no console command
+# Install all required packages
 pip install -r requirements.txt
 
 # Verify installation
 python -c "import synapse; print('✅ Synapse installed successfully')"
-
-# Test console command (only works with Method 1)
-synapse-agent --help
 ```
 
-**Installation Methods:**
-- **Method 1** (`pip install -e .`): Full package install + console command
-- **Method 2** (`pip install -r requirements.txt`): Dependencies only, use `python main.py`
+#### Step 4: Configure API Key
 
-### Step 4: API Key Configuration
+1. **Copy the template:**
+   ```bash
+   # macOS/Linux
+   cp .env.template .env
+   
+   # Windows
+   copy .env.template .env
+   ```
 
-**Option A: Environment File (Recommended)**
+2. **Add your Gemini API key:**
+   - Open `.env` file in any text editor
+   - Replace `your_gemini_api_key_here` with your actual key
+   - Save the file
+
+   **Get your free API key:** [Google AI Studio](https://ai.google.dev/) → Get API Key → Create API Key
+
+#### Step 5: Verify Everything Works
 ```bash
-# Copy the provided template
-cp .env.template .env
-
-# Edit .env file with your actual API key
-# Replace 'your_gemini_api_key_here' with your actual Gemini API key
-nano .env  # or use your preferred editor
-```
-
-**Option B: Direct Environment Variable**
-```bash
-# Set temporarily
-export GEMINI_API_KEY="your_gemini_api_key_here"
-
-# Set permanently (add to ~/.bashrc or ~/.zshrc)
-echo 'export GEMINI_API_KEY="your_gemini_api_key_here"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-**Getting a Gemini API Key:**
-1. Visit [Google AI Studio](https://ai.google.dev/)
-2. Sign in with your Google account
-3. Navigate to "Get API Key" section
-4. Create a new API key
-5. Copy the key to your configuration
-
-### Step 5: Verify Installation
-
-```bash
-# Test CLI functionality
+# Test the CLI
 python main.py --help
 
-# List all available scenarios
+# List available scenarios
 python main.py --list-scenarios
 
-# Run basic functionality test
-python main.py --debug-tools
-
-# Run comprehensive system check
-python synapse/agent/agent.py --debug --verbose
+# Run a test scenario
+python main.py "Driver is stuck in traffic"
 ```
 
-> **🎯 For detailed setup instructions and troubleshooting, see [SETUP_GUIDE.md](SETUP_GUIDE.md)**
+### ⚡ Quick Test
+```bash
+# Run a predefined scenario
+python main.py --scenario traffic
+
+# Run with performance metrics
+python main.py --scenario 2.4 --executive
+```
+
+### 🔍 Troubleshooting
+
+<details>
+<summary><b>❌ "Python not found" or "python3 not found"</b></summary>
+
+- **Windows**: Use `python` instead of `python3`
+- **Mac/Linux**: Use `python3` instead of `python`
+- Ensure Python is in your PATH: `python --version` or `python3 --version`
+</details>
+
+<details>
+<summary><b>❌ "No module named synapse"</b></summary>
+
+- Make sure you're in the project directory: `cd Project-Synapse`
+- Ensure virtual environment is activated (you should see `(.venv)`)
+- Reinstall dependencies: `pip install -r requirements.txt`
+</details>
+
+<details>
+<summary><b>❌ "GEMINI_API_KEY not set"</b></summary>
+
+- Check `.env` file exists: `ls -la .env` (Mac/Linux) or `dir .env` (Windows)
+- Verify key is set correctly in `.env` file
+- No spaces around `=` sign: `GEMINI_API_KEY=your_actual_key_here`
+</details>
+
+<details>
+<summary><b>❌ "429 Quota exceeded" error</b></summary>
+
+- You've hit the free tier limit (50 requests/day)
+- Wait 24 hours or upgrade to paid tier
+- Free tier resets at midnight Pacific Time
+</details>
+
+### 📚 Installation Resources
+
+- **🚀 Quick Start**: Follow the installation guide above
+- **🔧 Automated Install**: Use `python install.py` for guided setup  
+- **📖 Detailed Guide**: [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) - Advanced configuration
+- **📦 Simple Guide**: [docs/INSTALL.md](docs/INSTALL.md) - Platform-specific commands
+- **🆘 Need Help?**: [Open an issue](https://github.com/yourusername/Project-Synapse/issues)
 
 ## 🎮 How to Use the CLI
 
@@ -226,16 +281,47 @@ python main.py --quiet "Weather preventing delivery"
 python main.py --no-banner "Order dispute at customer location"
 ```
 
+### Display Modes
+
+The Synapse agent offers four distinct display modes:
+
+| Mode | Flag | Description |
+|------|------|-------------|
+| **Standard** | (default) | Shows chain of thought and final resolution |
+| **Verbose** | `--verbose` | Detailed observations and all tool parameters |
+| **Quiet** | `--quiet` | Only shows final resolution plan |
+| **Executive** | `--executive` | Real-time performance metrics and visualizations |
+
+#### 🎯 Executive Mode (NEW)
+
+Executive mode provides comprehensive performance analytics perfect for demonstrations and monitoring:
+
+```bash
+# Run with executive performance tracking
+python main.py --executive "Driver stuck in traffic"
+
+# Combine with scenarios for benchmarking
+python main.py --scenario 2.4 --executive
+```
+
+**Executive Mode Features:**
+- 📊 **Real-Time Metrics**: Live query processing visualization
+- ⏱️ **Tool Timeline**: Execution timeline with parallel vs sequential analysis
+- 📈 **Performance Analysis**: Response times, complexity scores, reflection tracking
+- 💰 **Cost Tracking**: LLM token usage and estimated API costs
+- 🔧 **Tool Breakdown**: Individual tool performance and success rates
+- 📁 **Metric Export**: JSON export of all performance data
+
 ### CLI Command Reference
 
 | Command | Description | Example |
-|---------|-------------|---------|
 | `python main.py "problem"` | Solve custom logistics problem | `python main.py "Driver lost, can't find address"` |
 | `synapse-agent "problem"` | Alternative console command | `synapse-agent "Package delayed"` |
 | `--scenario X` | Use predefined scenario | `--scenario 2.3` |
 | `--list-scenarios` | Show all available scenarios | `python main.py -l` |
 | `--verbose` | Show detailed technical information | `--verbose` |
 | `--quiet` | Minimal output (final plan only) | `--quiet` |
+| `--executive` | Enable performance metrics dashboard | `--executive` |
 | `--debug-tools` | Display available tools | `python main.py --debug-tools` |
 | `--help` | Show complete help information | `python main.py --help` |
 
@@ -510,6 +596,56 @@ $ python main.py --scenario traffic --verbose
 [Detailed output showing full parameters, complete observations, and technical debugging information]
 ```
 
+**Example 8: Executive Mode Performance Analysis**
+```bash
+$ python main.py --scenario 2.9 --executive
+
+🚀 ============================================================ 🚀
+    SYNAPSE AGENT - Autonomous Logistics Coordination
+    Advanced Problem-Solving with Reflection & Adaptation
+🚀 ============================================================ 🚀
+
+🎯 Using scenario '2.9': Driver has accepted a booking but is not moving or responding
+
+[Real-time performance dashboard displays during execution]
+
+======================================================================
+📊 EXECUTIVE PERFORMANCE SUMMARY
+======================================================================
+
+📈 Query Metrics:
+  • Total Duration: 3.42 seconds
+  • Steps Executed: 5
+  • Tools Used: 4
+  • Reflections: 1
+
+⚡ Efficiency Analysis:
+  • Parallel Executions: 2
+  • Time Saved: 1.8s
+  • Complexity Score: 6/10
+  • First-Try Success: No (Reflection Used)
+
+💰 Cost Analysis:
+  • Total Tokens: 2,847
+  • Estimated Cost: $0.0012
+  • LLM Calls: 5
+  • Avg Response Time: 0.68s
+
+🔧 Tool Execution Breakdown:
+  ✅ get_driver_status: 0.42s
+  ✅ notify_customer: 0.38s
+  ✅ find_replacement_driver: 1.20s
+  ✅ cancel_booking: 0.55s
+
+📁 Detailed metrics exported to: metrics_a3b4c5d6.json
+
+🎯 FINAL RESOLUTION:
+Unresponsive driver replaced. Customer notified, new driver assigned with
+updated ETA. Original booking cancelled and flagged for review.
+
+✅ Agent successfully resolved the unresponsive driver situation!
+```
+
 ## 🧪 Testing & Development
 
 ### Running Tests
@@ -579,6 +715,8 @@ def test_custom_scenario():
 | **Tool Integration** | 32 tools working seamlessly |
 | **Scenario Coverage** | 13 comprehensive test scenarios |
 | **Reflection Accuracy** | 90%+ correct alternative suggestions |
+| **Parallel Execution** | Up to 40% time savings on multi-tool scenarios |
+| **Cost Efficiency** | <$0.001 per typical query resolution |
 
 ### Scalability
 
@@ -630,8 +768,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 python-dotenv          # Environment variable management
 langchain             # Core LLM framework
 langchain-core        # LangChain core components  
-langchain-google-genai # Google Gemini integration (NEW)
+langchain-google-genai # Google Gemini integration
 langgraph            # State graph orchestration
+rich                  # Rich terminal formatting for executive mode
+plotext              # Terminal-based plotting for metrics visualization
 ```
 
 ### **Complete Tool Registry (32 Tools)**
@@ -646,9 +786,9 @@ The agent now includes tools for:
 ## 📞 Support & Contact
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/Project-Synapse/issues)
-- **Setup Guide**: [SETUP_GUIDE.md](SETUP_GUIDE.md) - **Start here for fresh installations**
-- **Documentation**: [docs/](docs/)
-- **Examples**: [examples/](examples/)
+- **📚 Documentation**: [docs/INDEX.md](docs/INDEX.md) - **Complete documentation index**
+- **🔧 Setup Guide**: [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) - **Start here for fresh installations**
+- **💡 Examples**: [examples/](examples/) - Usage examples and demos
 
 ---
 

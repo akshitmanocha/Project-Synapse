@@ -61,6 +61,8 @@ License: MIT
 
 from __future__ import annotations
 import threading
+import time
+import uuid
 
 from typing import Any, Dict, List, Optional, TypedDict, Callable, Tuple
 import os
@@ -75,6 +77,8 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from synapse.tools import tools as sim_tools
+from synapse.core.performance_tracker import PerformanceTracker
+from synapse.core.executive_display import ExecutiveDisplay
 
 
 class AgentState(TypedDict, total=False):
@@ -564,6 +568,10 @@ def reasoning_node(state: AgentState) -> AgentState:
 		- Adapt strategies based on previous action outcomes
 		- Generate human-readable explanations for all decisions
 	"""
+	# Track LLM call performance
+	tracker = PerformanceTracker()
+	llm_start = time.time()
+	
 	# Initialize LLM; handle missing/invalid credentials gracefully
 	try:
 		llm = _get_llm()
@@ -597,6 +605,9 @@ def reasoning_node(state: AgentState) -> AgentState:
 			"Decide the next best single tool call."
 		)),
 	]
+	
+	# Estimate token count (rough approximation)
+	input_tokens = len(str(messages)) // 4  # Rough estimate
 
 	# Run the LLM call with a protective timeout
 	def _call():
@@ -607,6 +618,13 @@ def reasoning_node(state: AgentState) -> AgentState:
 			fut = ex.submit(_call)
 			resp = fut.result(timeout=30)
 			text = getattr(resp, "content", str(resp))
+		
+		# Track LLM performance
+		llm_response_time = time.time() - llm_start
+		output_tokens = len(text) // 4  # Rough estimate
+		if tracker.current_query:
+			tracker.record_llm_call(input_tokens, output_tokens, llm_response_time)
+			
 	except concurrent.futures.TimeoutError:
 		state["done"] = True
 		state["plan"] = "LLM call timed out. Please check network or GROQ availability."
@@ -701,6 +719,8 @@ def tool_exec_node(state: AgentState) -> AgentState:
 
 def reflection_node(state: AgentState) -> AgentState:
 	"""Reflection node: analyze tool execution results and handle failures."""
+	tracker = PerformanceTracker()
+	
 	steps = state.get("steps", [])
 	if not steps:
 		return state
@@ -850,6 +870,14 @@ def reflection_node(state: AgentState) -> AgentState:
 		state["needs_adaptation"] = True
 		state["reflection_reason"] = reflection_reason
 		state["suggested_alternative"] = alternative_approach
+		
+		# Track reflection event
+		if tracker.current_query:
+			tracker.record_reflection(
+				reflection_reason,
+				tool_name,
+				alternative_approach or "unknown"
+			)
 	else:
 		# Clear any previous reflection flags
 		state["needs_adaptation"] = False
@@ -880,15 +908,24 @@ def build_graph():  # -> Compiled graph app
 	return graph.compile()
 
 
-def run_agent(input_text: str) -> AgentState:
+def run_agent(input_text: str, scenario_type: str = "custom", enable_performance_tracking: bool = False) -> AgentState:
 	"""Convenience runner for the agent graph.
 
 	Args:
 		input_text: The user problem statement.
+		scenario_type: Type of scenario for performance tracking.
+		enable_performance_tracking: Whether to track performance metrics.
 
 	Returns:
 		Final AgentState after the graph finishes.
 	"""
+	# Initialize performance tracking if enabled
+	tracker = PerformanceTracker()
+	query_id = str(uuid.uuid4())[:8]
+	
+	if enable_performance_tracking:
+		tracker.start_query(query_id, scenario_type, input_text)
+	
 	app = build_graph()
 	initial: AgentState = {
 		"input": input_text,
@@ -904,6 +941,12 @@ def run_agent(input_text: str) -> AgentState:
 	# Invoke compiled graph with recursion limit; it will iterate until END  
 	config = {"recursion_limit": 25}  # Increased limit to account for reflection cycles
 	final_state: AgentState = app.invoke(initial, config)
+	
+	# Complete performance tracking
+	if enable_performance_tracking:
+		success = final_state.get("done", False) and final_state.get("plan")
+		tracker.complete_query(success, final_state.get("plan"))
+	
 	return final_state
 
 
