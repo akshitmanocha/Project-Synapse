@@ -240,7 +240,21 @@ def get_predefined_scenarios() -> Dict[str, str]:
         "2.9": "Driver has accepted a booking but is not moving or responding to contact attempts for over 10 minutes",
         "traffic": "Driver stuck in heavy traffic, 45-minute delay expected for customer order",
         "merchant": "Merchant's kitchen equipment broke down, cannot prepare the order",
-        "weather": "Severe weather conditions preventing safe delivery completion"
+        "weather": "Severe weather conditions preventing safe delivery completion",
+        
+        # New approval-requiring scenarios
+        "approval.1": "Customer extremely upset about cold food delivery, demanding $50 voucher compensation",
+        "approval.2": "VIP customer's $2000 jewelry order delayed due to driver accident, needs immediate management escalation",
+        "approval.3": "Driver's vehicle damaged while avoiding road hazard during delivery, requesting expense reimbursement",
+        "approval.4": "System outage caused 3-hour merchant downtime, merchant requesting platform credit compensation",
+        "approval.5": "Multiple delivery failures due to address issues, customer demands premium redelivery with waived fees",
+        
+        # High-stakes scenarios requiring human intervention
+        "human.1": "Driver reports customer threatened physical violence over late delivery, safety concern escalation needed",
+        "human.2": "Customer claims driver stole $500 cash tip, potential legal liability and fraud investigation required",
+        "human.3": "Delivery vehicle involved in minor accident with $10,000 damages, insurance and legal coordination needed",
+        "human.4": "Food poisoning complaint goes viral on social media with 50K shares, crisis management required",
+        "human.5": "Government inspector found health violations during delivery pickup, regulatory compliance issue"
     }
 
 
@@ -269,7 +283,7 @@ Examples:
     input_group.add_argument(
         "--scenario", "-s",
         type=str,
-        help="Use a predefined scenario (1.0, 2.0, 2.2, 2.3, 2.4, traffic, merchant, weather)"
+        help="Use a predefined scenario (1.0, 2.0-2.9, traffic, approval.1-5, human.1-5)"
     )
     input_group.add_argument(
         "--list-scenarios", "-l",

@@ -14,6 +14,7 @@ This directory contains comprehensive documentation for Project Synapse.
 - **[Validation Report](VALIDATION_REPORT.md)** - Comprehensive testing and validation results
 
 ## 🎯 Features & Performance
+- **[Authorization System](AUTHORIZATION_SYSTEM.md)** - Approval workflows and human intervention
 - **[Executive Mode Example](executive_mode_example.md)** - Performance metrics demonstration
 - **[Output Formatting](output_formatting.md)** - CLI output formatting guidelines
 - **[Final Implementation Summary](FINAL_IMPLEMENTATION_SUMMARY.md)** - Complete feature overview

@@ -25,8 +25,14 @@ Project Synapse is a sophisticated **autonomous AI agent** designed specifically
 - **Loop Prevention**: Built-in safeguards prevent infinite reflection cycles
 - **Learning Integration**: Incorporates failure patterns to improve future decision-making
 
+**🔐 Enterprise Authorization System**
+- **Approval Workflows**: Multi-level authorization for financial and high-impact actions
+- **Human Intervention**: Automatic escalation for safety, legal, and complex scenarios
+- **Risk Management**: Configurable thresholds and emergency override capabilities
+- **Audit Trail**: Complete tracking of all approval decisions and authorizations
+
 **🛠️ Comprehensive Tool Ecosystem**
-- **32+ Specialized Tools** across 10 categories:
+- **40+ Specialized Tools** across 12 categories:
   - 🚗 Core Operations (traffic analysis, merchant status, customer notifications, re-routing, nearby merchants)
   - 🕵️ Evidence & Disputes (collection, analysis, instant refunds, driver exoneration)
   - 📦 Stock Management (merchant contact, substitute proposals, partial refunds)
@@ -37,6 +43,8 @@ Project Synapse is a sophisticated **autonomous AI agent** designed specifically
   - 🚧 Traffic Management (alternative route calculation)
   - 🔍 Lost & Found (trip path location, lost item case initiation)
   - ⚠️ Safety & Routing (safe location rerouting, passenger/driver notifications)
+  - 💰 **Financial Authorization** (monetary vouchers, driver bonuses, merchant credits, expense approval)
+  - 👥 **Human Escalation** (management escalation, emergency override, premium service authorization)
 
 ### 🌟 Key Features
 
@@ -45,8 +53,10 @@ Project Synapse is a sophisticated **autonomous AI agent** designed specifically
 | **Multi-Stakeholder Coordination** | Manages customers, drivers, merchants, and senders simultaneously |
 | **Progressive Complexity Handling** | Scales from basic delays to complex dispute resolution |
 | **Real-Time Decision Making** | Sub-second responses for urgent logistics situations |
+| **Enterprise Authorization** | Multi-level approval workflows with human intervention capabilities |
 | **Professional CLI Interface** | Beautiful, structured output with clear reasoning visualization |
-| **Scenario-Based Testing** | 13 predefined scenarios covering comprehensive logistics challenges |
+| **Executive Performance Dashboard** | Real-time metrics, cost tracking, and efficiency analysis |
+| **Scenario-Based Testing** | 23 predefined scenarios covering comprehensive logistics challenges |
 | **Comprehensive Logging** | Full chain-of-thought tracking for audit and improvement |
 
 ## 🏗️ Project Architecture
@@ -58,12 +68,15 @@ synapse/                     # Main package directory
 │   └── agent.py            # LangGraph workflow with reflection
 ├── tools/                   # Logistics tools ecosystem
 │   ├── __init__.py         # Tool exports and metadata
-│   └── tools.py            # 18+ specialized logistics tools
+│   └── tools.py            # 40+ specialized logistics tools
+├── core/                    # Core systems and enterprise features
+│   ├── __init__.py         # Core exports
+│   ├── performance_tracker.py  # Real-time metrics collection
+│   ├── executive_display.py    # Executive dashboard interface
+│   └── authorization.py        # Multi-level approval system
 ├── prompts/                 # AI prompt engineering
 │   ├── __init__.py         # Prompt utilities
 │   └── system_prompt.txt   # Main system prompt with instructions
-├── core/                    # Core utilities and helpers
-│   └── __init__.py         # Core functionality
 └── utils/                   # Utility functions
     └── __init__.py         # Utility exports
 
@@ -342,6 +355,8 @@ python main.py --scenario 2.4 --executive
 | **traffic** | Driver stuck in heavy traffic delay | Route optimization |
 | **merchant** | Merchant equipment breakdown | Alternative sourcing |
 | **weather** | Severe weather preventing delivery | Safety-first approach |
+| **approval.1-5** | Scenarios requiring monetary/management approval | Authorization workflows |
+| **human.1-5** | Critical situations needing human intervention | Safety/legal escalation |
 
 ### Example Sessions
 

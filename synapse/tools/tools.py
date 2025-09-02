@@ -100,6 +100,14 @@ from typing import Literal, Optional
 from typing import Optional, Dict, Any, List
 import random, datetime, uuid, json, os
 
+# Import authorization system for approval-requiring actions
+try:
+    from synapse.core.authorization import auth_manager, APPROVAL_REQUIRED_ACTIONS
+except ImportError:
+    # Fallback for standalone testing
+    auth_manager = None
+    APPROVAL_REQUIRED_ACTIONS = {}
+
 def _now_iso() -> str:
     return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 
@@ -939,6 +947,153 @@ def debug_tool_metadata() -> bool:
     except Exception as e:
         print(f"✗ Metadata debug failed: {e}")
         return False
+
+
+# =============================================================================
+# APPROVAL-REQUIRING TOOLS - Financial and High-Impact Actions
+# =============================================================================
+
+def _request_approval(action_type: str, amount: float, description: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Helper function to request approval for monetary/high-impact actions."""
+    if not auth_manager:
+        # Fallback when authorization system not available
+        return {
+            "approval_required": True,
+            "approval_status": "simulated_approved",
+            "approved_amount": amount,
+            "conditions": ["Approval system not available - action simulated"],
+            "approval_id": f"SIM_{int(time.time())}"
+        }
+    
+    # Request approval through authorization system
+    request = auth_manager.request_approval(
+        action=action_type,
+        description=description,
+        monetary_value=amount,
+        context=context or {},
+        urgency="medium"
+    )
+    
+    # Simulate approval decision for demo purposes
+    if request.status.value == "pending":
+        request = auth_manager.simulate_approval_decision(request)
+    
+    return {
+        "approval_required": True,
+        "approval_status": request.status.value,
+        "approved_amount": amount if request.status.value in ["approved", "emergency_override"] else 0.0,
+        "rejection_reason": request.rejection_reason,
+        "conditions": request.conditions,
+        "approval_id": request.request_id,
+        "approver": request.approver,
+        "authorization_level": request.authorization_level.value
+    }
+
+
+def issue_monetary_voucher(customer_id: str, amount: float, reason: str, seed: Optional[int] = None) -> Dict[str, Any]:
+    """
+    Issue a monetary voucher to customer - requires approval for amounts > $10.
+    """
+    tool = "issue_monetary_voucher"
+    if not customer_id or not reason:
+        return _error(tool, "INVALID_PARAM", "customer_id and reason required")
+    
+    if amount <= 0:
+        return _error(tool, "INVALID_AMOUNT", "Amount must be positive")
+    
+    if amount > 1000:
+        return _error(tool, "AMOUNT_TOO_HIGH", "Maximum voucher amount is $1000")
+    
+    # Request approval for monetary voucher
+    approval_result = _request_approval(
+        action_type="issue_monetary_voucher",
+        amount=amount,
+        description=f"Issue ${amount:.2f} voucher to customer {customer_id} - {reason}",
+        context={
+            "customer_id": customer_id,
+            "reason": reason,
+            "voucher_type": "monetary"
+        }
+    )
+    
+    voucher_id = _gen_id("voucher")
+    
+    if approval_result["approval_status"] in ["approved", "emergency_override"]:
+        return {
+            "tool_name": tool,
+            "status": "ok",
+            "customer_id": customer_id,
+            "voucher_id": voucher_id,
+            "amount": approval_result["approved_amount"],
+            "reason": reason,
+            "voucher_issued": True,
+            "expiry_date": (datetime.datetime.now() + datetime.timedelta(days=30)).strftime("%Y-%m-%d"),
+            **approval_result,
+            "timestamp": _now_iso()
+        }
+    else:
+        return {
+            "tool_name": tool,
+            "status": "approval_denied",
+            "customer_id": customer_id,
+            "voucher_issued": False,
+            "requested_amount": amount,
+            **approval_result,
+            "timestamp": _now_iso()
+        }
+
+
+def escalate_to_management(issue_type: str, description: str, urgency: str = "medium", 
+                          estimated_cost: float = 0.0, seed: Optional[int] = None) -> Dict[str, Any]:
+    """
+    Escalate complex issues to management - requires approval based on estimated cost and urgency.
+    """
+    tool = "escalate_to_management"
+    if not issue_type or not description:
+        return _error(tool, "INVALID_PARAM", "issue_type and description required")
+    
+    valid_urgency = ["low", "medium", "high", "critical"]
+    if urgency not in valid_urgency:
+        urgency = "medium"
+    
+    approval_result = _request_approval(
+        action_type="escalate_to_management",
+        amount=estimated_cost,
+        description=f"Management escalation: {issue_type} - {description}",
+        context={
+            "issue_type": issue_type,
+            "description": description,
+            "urgency": urgency,
+            "estimated_cost": estimated_cost
+        }
+    )
+    
+    escalation_id = _gen_id("escalation")
+    
+    if approval_result["approval_status"] in ["approved", "emergency_override"]:
+        assigned_manager = f"manager_{random.choice(['ops', 'customer', 'logistics'])}"
+        return {
+            "tool_name": tool,
+            "status": "ok",
+            "escalation_id": escalation_id,
+            "issue_type": issue_type,
+            "description": description,
+            "urgency": urgency,
+            "escalated": True,
+            "assigned_to": assigned_manager,
+            "estimated_resolution_time": f"{random.choice([2, 4, 8, 24])} hours",
+            **approval_result,
+            "timestamp": _now_iso()
+        }
+    else:
+        return {
+            "tool_name": tool,
+            "status": "approval_denied",
+            "escalated": False,
+            "issue_type": issue_type,
+            **approval_result,
+            "timestamp": _now_iso()
+        }
 
 
 if __name__ == "__main__":
