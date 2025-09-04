@@ -325,6 +325,7 @@ python main.py --scenario 2.4 --executive
 - 🔧 **Tool Breakdown**: Individual tool performance and success rates
 - 📁 **Metric Export**: JSON export of all performance data
 
+
 ### CLI Command Reference
 
 | Command | Description | Example |

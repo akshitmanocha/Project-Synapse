@@ -255,6 +255,11 @@ def notify_customer(customer_id: str, message: str, channel: str="app", seed: Op
     tool = "notify_customer"
     if not customer_id or not message:
         return _error(tool, "INVALID_PARAM", "customer_id and message required")
+    
+    # Simulate notification delivery time (0.1-0.3 seconds)
+    import time
+    time.sleep(random.uniform(0.1, 0.3))
+    
     if seed is not None:
         random.seed(seed)
     delivered = random.random() > 0.05
@@ -513,6 +518,11 @@ def check_traffic(route_id: str, seed: Optional[int]=None) -> Dict[str,Any]:
     tool = "check_traffic"
     if not route_id:
         return _error(tool, "INVALID_PARAM", "route_id required")
+    
+    # Simulate realistic API response time (0.1-0.5 seconds)
+    import time
+    time.sleep(random.uniform(0.1, 0.5))
+    
     if seed is not None:
         random.seed(seed)
     incident_level = random.choice(["minor","major","none"])
@@ -534,6 +544,10 @@ def calculate_alternative_route(route_id: str, constraints: Optional[Dict[str,An
     tool = "calculate_alternative_route"
     if not route_id:
         return _error(tool, "INVALID_PARAM", "route_id required")
+    
+    # Simulate route calculation time (0.2-0.8 seconds)
+    import time
+    time.sleep(random.uniform(0.2, 0.8))
     if seed is not None:
         random.seed(seed)
     alternatives = []

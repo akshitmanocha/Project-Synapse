@@ -78,6 +78,18 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from synapse.tools import tools as sim_tools
 from synapse.core.performance_tracker import PerformanceTracker
 
+# Global executive display instance for real-time updates
+_executive_display = None
+
+def set_executive_display(display):
+	"""Set the global executive display instance."""
+	global _executive_display
+	_executive_display = display
+
+def get_executive_display():
+	"""Get the global executive display instance."""
+	return _executive_display
+
 
 class AgentState(TypedDict, total=False):
 		"""
@@ -691,9 +703,15 @@ def reasoning_node(state: AgentState) -> AgentState:
 		state["action"] = None
 		return state
 	except Exception as e:
-		# If LLM fails, attempt to finish gracefully
-		state["done"] = True
-		state["plan"] = f"LLM error: {e}"
+		# Check for quota limit specifically
+		error_str = str(e)
+		if "quota" in error_str.lower() or "429" in error_str or "resourceexhausted" in error_str.lower():
+			state["done"] = True
+			state["plan"] = "Google Gemini API quota exceeded (50 requests/day limit on free tier). Please wait 24 hours or upgrade to a paid plan."
+		else:
+			# If LLM fails, attempt to finish gracefully
+			state["done"] = True
+			state["plan"] = f"LLM error: {e}"
 		state["action"] = None
 		return state
 
@@ -739,12 +757,25 @@ def reasoning_node(state: AgentState) -> AgentState:
 	# Keep for traceability in steps; the observation will be filled by the tool node
 	steps = state.setdefault("steps", [])
 	steps.append({"thought": thought, "action": action, "observation": None})
+	
+	# Update executive display with step count
+	display = get_executive_display()
+	if display:
+		reflection_count = sum(1 for step in steps if step.get("action", {}).get("tool_name") == "reflect")
+		display.update_metrics({
+			"steps_completed": len(steps),
+			"reflection_count": reflection_count,
+			"complexity_score": min(len(steps) // 2 + 1, 10)  # Simple complexity estimation
+		})
+	
 	state["done"] = False
 	return state
 
 
 def tool_exec_node(state: AgentState) -> AgentState:
 	"""Tool execution node: run the selected tool and capture observation."""
+	import time
+	
 	action = state.get("action") or {}
 	tool_name = action.get("tool_name")
 	params = action.get("parameters") or {}
@@ -755,15 +786,66 @@ def tool_exec_node(state: AgentState) -> AgentState:
 		state["action"] = None
 		return state
 
+	# Update executive display - tool started
+	display = get_executive_display()
+	if display and tool_name:
+		display.add_tool_execution(tool_name, "running", None, False)
+		# Small delay to ensure display thread processes the update
+		import time
+		time.sleep(0.1)
+
 	registry = _tool_registry()
 	obs: Any
+	start_time = time.time()
+	
 	if tool_name in registry:
+		# Start tracking BEFORE execution
+		tracker = PerformanceTracker()
+		tool_id = None
+		if tracker.current_query:
+			tool_id = tracker.start_tool(tool_name, params)
+		
 		try:
+			# Add realistic delay before tool execution if not already present
+			import random
+			import time as time_module
+			time_module.sleep(random.uniform(0.05, 0.3))  # Universal tool delay
+			
 			obs = registry[tool_name](params)
+			duration = time.time() - start_time
+			# Update executive display - tool completed
+			if display:
+				display.add_tool_execution(tool_name, "success", duration, False)
+				# Small delay to ensure display thread processes the update
+				time_module.sleep(0.1)
+			# Complete performance tracker with success
+			if tracker.current_query and tool_id:
+				tracker.complete_tool(tool_id, True, str(obs))
 		except Exception as e:
 			obs = {"tool_name": tool_name, "status": "error", "error_message": str(e)}
+			duration = time.time() - start_time
+			# Update executive display - tool failed
+			if display:
+				display.add_tool_execution(tool_name, "failed", duration, False)
+				# Small delay to ensure display thread processes the update
+				time_module.sleep(0.1)
+			# Complete performance tracker with failure
+			if tracker.current_query and tool_id:
+				tracker.complete_tool(tool_id, False, str(e))
 	else:
 		obs = {"tool_name": tool_name, "status": "error", "error_message": f"unknown tool: {tool_name}"}
+		duration = time.time() - start_time
+		# Update executive display - tool failed
+		if display:
+			display.add_tool_execution(tool_name, "failed", duration, False)
+			# Small delay to ensure display thread processes the update
+			import time as time_mod
+			time_mod.sleep(0.1)
+		# Update performance tracker for unknown tool
+		tracker = PerformanceTracker()
+		if tracker.current_query:
+			tool_id = tracker.start_tool(tool_name, params)
+			tracker.complete_tool(tool_id, False, f"unknown tool: {tool_name}")
 
 	state["observation"] = obs
 	# Update last step's observation (append-only steps list)
@@ -928,6 +1010,11 @@ def reflection_node(state: AgentState) -> AgentState:
 		}
 		steps.append(reflection_step)
 		
+		# Update executive display with reflection
+		display = get_executive_display()
+		if display and tool_name:
+			display.add_reflection(reflection_reason, tool_name, alternative_approach or "None")
+		
 		# Set a flag to help the reasoning node understand we need adaptation
 		state["needs_adaptation"] = True
 		state["reflection_reason"] = reflection_reason
@@ -986,23 +1073,44 @@ def build_graph():  # -> Compiled graph app
 	return graph.compile()
 
 
-def run_agent(input_text: str, scenario_type: str = "custom", enable_performance_tracking: bool = False) -> AgentState:
+def run_agent(input_text: str, scenario_type: str = "custom", enable_performance_tracking: bool = False, executive_display=None) -> AgentState:
 	"""Convenience runner for the agent graph.
 
 	Args:
 		input_text: The user problem statement.
 		scenario_type: Type of scenario for performance tracking.
 		enable_performance_tracking: Whether to track performance metrics.
+		executive_display: Optional executive display instance for real-time updates.
 
 	Returns:
 		Final AgentState after the graph finishes.
 	"""
-	# Initialize performance tracking if enabled
+	# Initialize performance tracking (always for dashboard)
 	tracker = PerformanceTracker()
 	query_id = str(uuid.uuid4())[:8]
 	
-	if enable_performance_tracking:
-		tracker.start_query(query_id, scenario_type, input_text)
+	# Always start performance tracking for dashboard support
+	tracker.start_query(query_id, scenario_type, input_text)
+	
+	# Set executive display for real-time updates
+	if executive_display:
+		set_executive_display(executive_display)
+		# Initialize display with basic metrics
+		executive_display.update_metrics({
+			"query_id": query_id,
+			"scenario_type": scenario_type,
+			"elapsed_time": 0,
+			"steps_completed": 0,
+			"complexity_score": 1,
+			"active_tools": 0,
+			"reflection_count": 0,
+			"time_saved": 0,
+			"estimated_cost": "$0.0000",
+			"total_tokens": 0,
+			"success_rate": 0,
+			"avg_resolution_time": 0,
+			"intelligence_score": 0
+		})
 	
 	app = build_graph()
 	initial: AgentState = {
@@ -1022,10 +1130,9 @@ def run_agent(input_text: str, scenario_type: str = "custom", enable_performance
 	config = {"recursion_limit": max_agent_steps + 10}  # Buffer for graph routing
 	final_state: AgentState = app.invoke(initial, config)
 	
-	# Complete performance tracking
-	if enable_performance_tracking:
-		success = final_state.get("done", False) and final_state.get("plan")
-		tracker.complete_query(success, final_state.get("plan"))
+	# Complete performance tracking (always enabled now)
+	success = final_state.get("done", False) and final_state.get("plan")
+	tracker.complete_query(success, final_state.get("plan"))
 	
 	return final_state
 

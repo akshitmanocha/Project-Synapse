@@ -19,6 +19,10 @@ import os
 from datetime import datetime
 from typing import Dict, Any, List
 
+# Load environment variables first
+from dotenv import load_dotenv
+load_dotenv()
+
 # Add the project root to the path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -225,6 +229,44 @@ def print_final_plan(result: Dict[str, Any]):
     print("└" + "─" * 68 + "┘")
 
 
+def _quick_api_check() -> bool:
+    """Quick API availability check before running the agent."""
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        from langchain_core.messages import HumanMessage
+        
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("❌ GEMINI_API_KEY not found in .env file")
+            print("   Please add your API key to the .env file")
+            return False
+        
+        # Very quick test call
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-flash",
+            temperature=0,
+            api_key=api_key,
+            timeout=5  # Short timeout for quick check
+        )
+        
+        test_message = HumanMessage(content="OK")
+        response = llm.invoke([test_message])
+        
+        return bool(response and response.content)
+        
+    except Exception as e:
+        error_str = str(e)
+        if "quota" in error_str.lower() or "429" in error_str or "resourceexhausted" in error_str.lower():
+            print("❌ Google Gemini API quota exceeded (50 requests/day limit)")
+            print("   • Wait 24 hours for quota reset")
+            print("   • Get new API key from https://ai.google.dev/")
+            print("   • Run: python check_api_quota.py for detailed check")
+        elif "api_key" in error_str.lower() or "invalid" in error_str.lower():
+            print("❌ Invalid API key - check your GEMINI_API_KEY in .env")
+        else:
+            print(f"❌ API Error: {str(e)[:100]}...")
+        return False
+
 def get_predefined_scenarios() -> Dict[str, str]:
     """Get predefined test scenarios."""
     return {
@@ -383,8 +425,14 @@ Examples:
         # Determine scenario type for tracking
         scenario_type = args.scenario if args.scenario else "custom"
         
+        # Quick API availability check before running
+        if not _quick_api_check():
+            if args.executive and display:
+                display.stop()
+            return
+            
         # Run the agent with performance tracking if in executive mode
-        result = run_agent(problem, scenario_type=scenario_type, enable_performance_tracking=args.executive)
+        result = run_agent(problem, scenario_type=scenario_type, enable_performance_tracking=args.executive, executive_display=display)
         
         # Record end time
         end_time = datetime.now()
@@ -406,9 +454,14 @@ Examples:
                 
                 print(f"\n📈 Query Metrics:")
                 print(f"  • Total Duration: {duration.total_seconds():.2f} seconds")
-                print(f"  • Steps Executed: {last_query.total_steps}")
-                print(f"  • Tools Used: {len(last_query.tool_executions)}")
-                print(f"  • Reflections: {last_query.reflection_steps}")
+                # Get actual data from result if tracker data is missing
+                total_steps = last_query.total_steps if last_query.total_steps > 0 else len(result.get("steps", []))
+                tool_count = len(last_query.tool_executions) if last_query.tool_executions else len([s for s in result.get("steps", []) if s.get("action")])
+                reflection_count = last_query.reflection_steps if hasattr(last_query, 'reflection_steps') else len([s for s in result.get("steps", []) if s.get("action", {}).get("tool_name") == "reflect"])
+                
+                print(f"  • Steps Executed: {total_steps}")
+                print(f"  • Tools Used: {tool_count}")
+                print(f"  • Reflections: {reflection_count}")
                 
                 print(f"\n⚡ Efficiency Analysis:")
                 print(f"  • Parallel Executions: {last_query.parallel_executions}")

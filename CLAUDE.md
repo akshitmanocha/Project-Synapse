@@ -32,6 +32,10 @@ python main.py --list-scenarios
 
 # Debug available tools
 python main.py --debug-tools
+
+# Check API quota before running
+python check_api_quota.py
+
 ```
 
 ### Testing
