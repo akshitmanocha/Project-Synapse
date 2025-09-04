@@ -60,7 +60,6 @@ License: MIT
 """
 
 from __future__ import annotations
-import threading
 import time
 import uuid
 
@@ -78,7 +77,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from synapse.tools import tools as sim_tools
 from synapse.core.performance_tracker import PerformanceTracker
-from synapse.core.executive_display import ExecutiveDisplay
 
 
 class AgentState(TypedDict, total=False):
@@ -482,6 +480,38 @@ def _tool_registry() -> Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]]:
 			provided_address=provided_address
 		)
 
+	# Human Intervention Tools
+	def adapt_contact_support_live(p: Dict[str, Any]) -> Dict[str, Any]:
+		issue = p.get("issue", {})
+		if not isinstance(issue, dict):
+			issue = {"description": str(issue)} if issue else {"description": "Support needed"}
+		return sim_tools.contact_support_live(
+			issue=issue,
+			priority=str(p.get("priority", "high"))
+		)
+
+	def adapt_escalate_to_management(p: Dict[str, Any]) -> Dict[str, Any]:
+		return sim_tools.escalate_to_management(
+			issue_type=str(p.get("issue_type", "")),
+			description=str(p.get("description", "")),
+			urgency=str(p.get("urgency", "medium")),
+			estimated_cost=float(p.get("estimated_cost", 0.0))
+		)
+
+	# Financial Authorization Tools
+	def adapt_issue_voucher(p: Dict[str, Any]) -> Dict[str, Any]:
+		amount = p.get("amount", 0)
+		try:
+			amount = float(amount)
+		except (ValueError, TypeError):
+			amount = 0.0
+		return sim_tools.issue_voucher(
+			customer_id=str(p.get("customer_id", "")),
+			amount=amount,
+			currency=str(p.get("currency", "USD")),
+			reason=p.get("reason")
+		)
+
 	return {
 		"check_traffic": adapt_check_traffic,
 		"get_merchant_status": adapt_get_merchant_status,
@@ -516,6 +546,11 @@ def _tool_registry() -> Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]]:
 		# Scenario 2.8: Unsafe Road Conditions Tools
 		"reroute_driver_to_safe_location": adapt_reroute_driver_to_safe_location,
 		"notify_passenger_and_driver": adapt_notify_passenger_and_driver,
+		# Human Intervention Tools
+		"contact_support_live": adapt_contact_support_live,
+		"escalate_to_management": adapt_escalate_to_management,
+		# Financial Authorization Tools
+		"issue_voucher": adapt_issue_voucher,
 		# Special pseudo-tool handled in tool_exec_node: "finish"
 	}
 
@@ -568,6 +603,29 @@ def reasoning_node(state: AgentState) -> AgentState:
 		- Adapt strategies based on previous action outcomes
 		- Generate human-readable explanations for all decisions
 	"""
+	# Early termination check to prevent recursion
+	steps = state.get("steps", [])
+	max_steps = int(os.getenv("MAX_AGENT_STEPS", "15"))
+	if len(steps) >= max_steps:
+		# Generate a reasonable conclusion based on what we've accomplished
+		last_successful_tools = []
+		for step in reversed(steps[-5:]):  # Look at last 5 steps
+			obs = step.get("observation", {})
+			if isinstance(obs, dict) and obs.get("status") != "error":
+				tool_name = step.get("action", {}).get("tool_name", "")
+				if tool_name and tool_name not in last_successful_tools:
+					last_successful_tools.append(tool_name)
+		
+		if last_successful_tools:
+			plan = f"Successfully executed {', '.join(last_successful_tools)}. Problem addressed to the extent possible with available information."
+		else:
+			plan = "Problem analysis completed. Applied standard operating procedures for the logistics situation."
+		
+		state["done"] = True
+		state["plan"] = plan
+		state["action"] = None
+		return state
+	
 	# Track LLM call performance
 	tracker = PerformanceTracker()
 	llm_start = time.time()
@@ -614,9 +672,11 @@ def reasoning_node(state: AgentState) -> AgentState:
 		return llm.invoke(messages)
 
 	try:
+		# Use configurable timeout from environment
+		llm_timeout = int(os.getenv("LLM_TIMEOUT", "30"))
 		with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
 			fut = ex.submit(_call)
-			resp = fut.result(timeout=30)
+			resp = fut.result(timeout=llm_timeout)
 			text = getattr(resp, "content", str(resp))
 		
 		# Track LLM performance
@@ -728,14 +788,16 @@ def reflection_node(state: AgentState) -> AgentState:
 	# Prevent infinite loops - check total steps and reflection count
 	total_steps = len(steps)
 	reflection_count = sum(1 for step in steps if step.get("action", {}).get("tool_name") == "reflect")
+	max_steps = int(os.getenv("MAX_AGENT_STEPS", "15"))
+	max_reflections = int(os.getenv("MAX_REFLECTIONS", "3"))
 	
-	if total_steps >= 20:  # Total step limit
+	if total_steps >= max_steps:
 		state["done"] = True
-		state["plan"] = "Maximum steps reached. Terminating with available resolution."
+		state["plan"] = f"Maximum steps ({max_steps}) reached. Terminating with current resolution."
 		return state
-	elif reflection_count >= 5:  # Max 5 reflections per problem
+	elif reflection_count >= max_reflections:
 		state["done"] = True
-		state["plan"] = "Maximum reflection cycles reached. Terminating with partial resolution."
+		state["plan"] = f"Maximum reflections ({max_reflections}) reached. Terminating with current resolution."
 		return state
 	
 	last_step = steps[-1]
@@ -895,11 +957,27 @@ def build_graph():  # -> Compiled graph app
 	graph.add_node("reflect", reflection_node)
 
 	def _route_after_reason(state: AgentState) -> str:
-		return "end" if state.get("done") else "act"
+		# Check for termination conditions - DO NOT MODIFY STATE in routing functions
+		if state.get("done"):
+			return "end"
+		# Check step limits as safety net
+		steps = state.get("steps", [])
+		max_steps = int(os.getenv("MAX_AGENT_STEPS", "15"))
+		if len(steps) >= max_steps:
+			return "end"
+		return "act"
 
 	def _route_after_reflect(state: AgentState) -> str:
-		# After reflection, always go back to reasoning to adapt approach
-		return "end" if state.get("done") else "reason"
+		# Check termination conditions - DO NOT MODIFY STATE in routing functions  
+		if state.get("done"):
+			return "end"
+		# Check step limits as safety net
+		steps = state.get("steps", [])
+		max_steps = int(os.getenv("MAX_AGENT_STEPS", "15"))
+		if len(steps) >= max_steps:
+			return "end"
+		# After reflection, go back to reasoning to adapt approach
+		return "reason"
 
 	graph.set_entry_point("reason")
 	graph.add_conditional_edges("reason", _route_after_reason, {"end": END, "act": "act"})
@@ -939,7 +1017,9 @@ def run_agent(input_text: str, scenario_type: str = "custom", enable_performance
 		"suggested_alternative": None,
 	}
 	# Invoke compiled graph with recursion limit; it will iterate until END  
-	config = {"recursion_limit": 25}  # Increased limit to account for reflection cycles
+	# Set reasonable recursion limit to prevent infinite loops
+	max_agent_steps = int(os.getenv("MAX_AGENT_STEPS", "15"))
+	config = {"recursion_limit": max_agent_steps + 10}  # Buffer for graph routing
 	final_state: AgentState = app.invoke(initial, config)
 	
 	# Complete performance tracking

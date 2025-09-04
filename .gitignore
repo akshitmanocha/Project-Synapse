@@ -200,3 +200,32 @@ src/
 
 # Claude
 .claude/
+
+# Project-specific temporary files
+metrics_*.json
+test_*.json
+*_test.py
+*_temp.py
+CLEANUP_SUMMARY.md
+temp_*
+*.tmp
+
+# Performance tracking outputs
+performance_*.json
+benchmark_*.json
+
+# Development artifacts  
+docs/scenarios/
+docs/architecture/
+docs/FINAL_IMPLEMENTATION_SUMMARY.md
+docs/VALIDATION_REPORT.md
+docs/INSTALLATION_IMPROVEMENTS.md
+docs/README.md
+docs/PROMPTS.md
+docs/output_formatting.md
+
+# Validation and test artifacts (exclude the main validation script)
+validate_temp_*.py
+test_all_*.py
+verify_*.py
+!validate_installation.py

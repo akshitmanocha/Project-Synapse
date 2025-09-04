@@ -32,7 +32,7 @@ Project Synapse is a sophisticated **autonomous AI agent** designed specifically
 - **Audit Trail**: Complete tracking of all approval decisions and authorizations
 
 **🛠️ Comprehensive Tool Ecosystem**
-- **40+ Specialized Tools** across 12 categories:
+- **30+ Specialized Tools** across 8 categories:
   - 🚗 Core Operations (traffic analysis, merchant status, customer notifications, re-routing, nearby merchants)
   - 🕵️ Evidence & Disputes (collection, analysis, instant refunds, driver exoneration)
   - 📦 Stock Management (merchant contact, substitute proposals, partial refunds)
@@ -68,7 +68,7 @@ synapse/                     # Main package directory
 │   └── agent.py            # LangGraph workflow with reflection
 ├── tools/                   # Logistics tools ecosystem
 │   ├── __init__.py         # Tool exports and metadata
-│   └── tools.py            # 40+ specialized logistics tools
+│   └── tools.py            # 30+ specialized logistics tools
 ├── core/                    # Core systems and enterprise features
 │   ├── __init__.py         # Core exports
 │   ├── performance_tracker.py  # Real-time metrics collection
@@ -727,7 +727,7 @@ def test_custom_scenario():
 |--------|-------------|
 | **Response Time** | Sub-second for urgent decisions |
 | **Success Rate** | 95%+ with reflection system |
-| **Tool Integration** | 32 tools working seamlessly |
+| **Tool Integration** | 30 tools working seamlessly |
 | **Scenario Coverage** | 13 comprehensive test scenarios |
 | **Reflection Accuracy** | 90%+ correct alternative suggestions |
 | **Parallel Execution** | Up to 40% time savings on multi-tool scenarios |
@@ -789,7 +789,7 @@ rich                  # Rich terminal formatting for executive mode
 plotext              # Terminal-based plotting for metrics visualization
 ```
 
-### **Complete Tool Registry (32 Tools)**
+### **Complete Tool Registry (30 Tools)**
 The agent now includes tools for:
 - **Scenario 2.4**: Recipient unavailable (contact, drop-off, lockers, redelivery, sender contact)
 - **Scenario 2.5**: Address verification (customer address confirmation) 

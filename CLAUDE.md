@@ -30,12 +30,15 @@ python main.py --scenario traffic --executive
 # List all scenarios
 python main.py --list-scenarios
 
-# Debug tools
+# Debug available tools
 python main.py --debug-tools
 ```
 
 ### Testing
 ```bash
+# Quick validation (no API calls required)
+python validate_installation.py
+
 # Run all tests
 pytest tests/
 
@@ -52,7 +55,7 @@ pytest tests/unit/test_simple_reflection.py
 pytest tests/ --cov=synapse --cov-report=html
 ```
 
-### Performance and Demo Scripts
+### Performance Scripts
 ```bash
 # Performance benchmark across scenarios
 python demo_performance.py
@@ -62,125 +65,145 @@ python synapse/agent/agent.py --debug --verbose
 ```
 
 ### Environment Variables
-Set in `.env` file (copy from `.env.template`):
-- `GEMINI_API_KEY` - Required for LLM operations
-- `DEBUG=true` - Enable debug logging  
-- `MAX_AGENT_STEPS=20` - Max reasoning steps
-- `MAX_REFLECTIONS=5` - Max reflection cycles
+Required in `.env` file (copy from `.env.template`):
+- `GEMINI_API_KEY` - Required for Google Gemini LLM operations
+- `DEBUG=false` - Enable debug logging  
+- `MAX_AGENT_STEPS=20` - Max reasoning steps before termination
+- `MAX_REFLECTIONS=5` - Max reflection cycles per problem
 - `LLM_TIMEOUT=30` - LLM timeout in seconds
 
 ## Architecture Overview
 
-### Core Agent System (ANALYZE → STRATEGIZE → EXECUTE → ADAPT)
+### Core Agent System (LangGraph StateGraph)
 
-The agent is built on **LangGraph StateGraph** with three main nodes:
+The agent uses **LangGraph StateGraph** with three main nodes:
 
 1. **Reasoning Node** (`synapse/agent/agent.py:reasoning_node`)
-   - Analyzes logistics problems and selects optimal tool actions
-   - Uses Google Gemini LLM with structured system prompts
+   - Analyzes logistics problems using Google Gemini LLM
+   - Selects optimal tool actions from structured system prompts
    - Parses LLM responses to extract tool calls and reasoning
 
 2. **Tool Execution Node** (`synapse/agent/agent.py:tool_exec_node`) 
-   - Executes selected logistics tools from the tool registry
-   - Captures results and handles tool failures
-   - Integrates with performance tracking system
+   - Executes specialized logistics tools from the registry
+   - Captures results and integrates with performance tracking
+   - Handles tool failures with comprehensive error information
 
 3. **Reflection Node** (`synapse/agent/agent.py:reflection_node`)
-   - Detects tool failures and suboptimal outcomes
-   - Implements intelligent escalation chains
-   - Suggests alternative approaches and prevents infinite loops
+   - Detects failures and suboptimal outcomes automatically
+   - Implements intelligent escalation chains for robust recovery
+   - Prevents infinite loops while suggesting alternative approaches
 
 ### State Management
-**AgentState** (TypedDict) flows between nodes containing:
+**AgentState** flows between nodes with key fields:
 - `input`: User's problem description
-- `steps`: Chronological audit log of reasoning/actions/observations
-- `plan`: Final resolution when complete
+- `steps`: Chronological audit log of all reasoning/actions/observations
+- `plan`: Final resolution plan when agent completes
 - `action`/`observation`: Current execution context
-- `needs_adaptation`/`reflection_reason`/`suggested_alternative`: Reflection system state
+- `needs_adaptation`: Triggers reflection system when tools fail
+- `reflection_reason`/`suggested_alternative`: Adaptive recovery state
 
 ### Tool Ecosystem (`synapse/tools/tools.py`)
 
-**32+ specialized logistics tools** organized by category:
-- Traffic & routing (check_traffic, re_route_driver)
-- Merchant operations (get_merchant_status, contact_merchant) 
-- Customer communication (notify_customer, contact_recipient_via_chat)
-- Evidence & disputes (collect_evidence, analyze_evidence)
-- Delivery management (suggest_safe_drop_off, find_nearby_locker)
-- Refund processing (issue_instant_refund, propose_substitute)
+**40+ specialized logistics tools** across categories:
+- **Traffic & Routing**: Real-time traffic analysis, dynamic re-routing
+- **Merchant Operations**: Status checks, contact, nearby alternatives
+- **Customer Communication**: Multi-channel notifications, recipient contact
+- **Evidence & Disputes**: Evidence collection, AI-powered fault analysis
+- **Delivery Management**: Safe drop-off, locker search, redelivery scheduling
+- **Refund Processing**: Instant/partial refunds, substitute recommendations
+- **Human Intervention**: Live support escalation, management oversight, emergency protocols
 
-Tools return structured responses with:
-- Status indicators (success/failure)
-- Rich contextual data for agent reasoning
-- Realistic failure modes for robust training
+Each tool returns structured responses with status indicators, rich contextual data, and realistic failure modes for agent training.
 
-### Performance Tracking System (`synapse/core/`)
+### Performance & Executive Systems (`synapse/core/`)
 
-**PerformanceTracker** (`performance_tracker.py`):
-- Singleton pattern for metrics collection
-- Tracks LLM calls, tool executions, reflection events
-- Calculates complexity scores, parallelization savings, cost estimates
-- Exports detailed JSON metrics for analysis
+**PerformanceTracker**: Singleton metrics collection system tracking LLM calls, tool executions, reflection events, complexity scores, and cost estimates with JSON export capability.
 
-**ExecutiveDisplay** (`executive_display.py`):
-- Real-time dashboard using Rich terminal UI
-- Live metrics during agent execution
-- Tool timeline with parallel execution visualization
-- Performance summaries and cost analysis
+**ExecutiveDisplay**: Real-time Rich terminal dashboard providing live agent execution metrics, tool timeline visualization, and performance analysis during runs.
 
 ## Key Implementation Details
 
 ### Agent Workflow Control
 - **Conditional routing** between nodes based on agent state
-- **Recursive execution** until problem resolution (max 25 steps)
+- **Recursive execution** until problem resolution (max steps configurable via MAX_AGENT_STEPS)
 - **Graceful termination** via `done` flag or step limits
 
 ### Error Recovery Strategy
-Escalation chains for common scenarios:
-- Contact failure → Safe drop-off → Locker → Redelivery → Sender contact
-- Evidence analysis → Partial refund → Full refund
-- Traffic delays → Re-routing → Customer notification
+Built-in escalation chains for robust problem resolution:
+- **Contact failure**: Safe drop-off → Locker → Redelivery → Sender contact
+- **Dispute resolution**: Evidence analysis → Partial refund → Full refund
+- **Traffic delays**: Re-routing → Customer notification → Time adjustment
 
 ### LLM Integration
-- **Gemini 1.5 Flash** model via `langchain_google_genai`
-- **Structured prompts** in `synapse/prompts/system_prompt.txt`
-- **JSON parsing** of LLM responses for tool calls
-- **Timeout handling** and retry logic for robustness
+- **Google Gemini 1.5 Flash** via `langchain_google_genai`
+- **System prompts** located in `synapse/prompts/system_prompt.txt`
+- **JSON parsing** for structured tool call extraction
+- **Timeout handling** and retry logic (configurable via LLM_TIMEOUT)
 
 ### CLI Interface (`main.py`)
-Four display modes:
+Four display modes for different use cases:
 - **Standard**: Chain of thought + final resolution
-- **Verbose**: Detailed tool parameters and observations
-- **Quiet**: Final resolution only
-- **Executive**: Real-time performance metrics dashboard
+- **Verbose** (`--verbose`): Detailed tool parameters and observations  
+- **Quiet** (`--quiet`): Final resolution only
+- **Executive** (`--executive`): Real-time performance metrics dashboard
 
 ### Module Organization
 ```
 synapse/
-├── agent/          # Core LangGraph agent implementation
-├── tools/          # 32+ specialized logistics tools
+├── agent/          # Core LangGraph agent (agent.py)
+├── tools/          # 40+ specialized logistics tools (tools.py)
 ├── core/           # Performance tracking and executive display
-├── prompts/        # LLM system prompts
+├── prompts/        # LLM system prompts (system_prompt.txt)
 └── utils/          # Utility functions
 ```
 
 ## Predefined Scenarios
-13 test scenarios ranging from simple (traffic delays) to complex (multi-stakeholder disputes):
-- **1.0**: Restaurant overloaded
-- **2.0-2.9**: Progressive complexity scenarios  
-- **traffic/merchant/weather**: Common situation handlers
+23 test scenarios accessible via `--scenario` flag:
+- **Basic scenarios** (1.0, traffic, merchant, weather): Simple logistics issues
+- **Progressive complexity** (2.0-2.9): Multi-step resolution chains
+- **Authorization scenarios** (approval.1-5): Financial/management approval workflows  
+- **Human escalation** (human.1-5): Critical situations requiring human intervention
 
-Access via `--scenario` flag or `get_predefined_scenarios()` function.
+Access scenarios via `python main.py --scenario <ID>` or `get_predefined_scenarios()` in code.
 
-## Performance Considerations
-- **Sub-second** response times for urgent decisions
-- **Parallel tool execution** where possible (tracked via ExecutiveDisplay)
-- **Token optimization** in LLM calls (estimated costs in performance metrics)
-- **Memory efficient** single-session problem solving
+## Development Notes
+
+### Adding New Tools
+1. Add tool function to `synapse/tools/tools.py`
+2. Create adapter function in `synapse/agent/agent.py` (see existing `adapt_*` functions)
+3. Register in `_tool_registry()` return dictionary
+4. Test with `python synapse/agent/agent.py --debug-components` to verify registration
+
+### Modifying Reflection Logic
+- Failure detection patterns in `synapse/agent/agent.py:reflection_node()` 
+- Escalation chains defined in reflection system (lines 822-870)
+- Agent state fields: `needs_adaptation`, `reflection_reason`, `suggested_alternative`
+- **Important**: Ensure all referenced tools exist in registry to prevent recursion errors
+
+### Environment Configuration
+All limits are configurable via environment variables in `.env` file:
+- `MAX_AGENT_STEPS=15` - Maximum reasoning steps before termination
+- `MAX_REFLECTIONS=3` - Maximum reflection cycles per problem  
+- `LLM_TIMEOUT=30` - LLM request timeout in seconds
+- `GEMINI_API_KEY` - Required for Google Gemini LLM operations
+
+### Troubleshooting Common Issues
+**Recursion Limit Errors**:
+- Check `MAX_AGENT_STEPS` and `MAX_REFLECTIONS` in `.env`
+- Ensure routing functions don't modify state
+- Verify all tools referenced in reflection system exist
+
+**Missing Tool Errors**:
+- Tool exists in `tools.py` but not in `_tool_registry()`? Add adapter function
+- Check tool registry with: `python synapse/agent/agent.py --debug-components`
+
+**API Rate Limits**:
+- Agent handles gracefully with timeouts
+- Adjust `LLM_TIMEOUT` for slower connections
+- Monitor with executive mode: `python main.py --scenario X --executive`
+
+### Performance Optimization  
+- **State immutability**: AgentState.steps is append-only audit log
+- **Executive mode** provides detailed metrics for analysis and cost tracking
+- **Configurable limits** prevent runaway executions
 - **Graceful degradation** with comprehensive error handling
-
-## Development Tips
-- **State immutability**: AgentState steps are append-only audit log
-- **Tool registry**: Add new tools via `_tool_registry()` function with parameter adapters
-- **Reflection patterns**: Add new failure detection in `reflection_node()`
-- **Executive mode**: Ideal for demos and performance analysis
-- **Comprehensive logging**: Full chain-of-thought available in verbose modes
